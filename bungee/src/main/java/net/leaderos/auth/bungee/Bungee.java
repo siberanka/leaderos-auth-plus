@@ -5,6 +5,7 @@ import eu.okaeri.configs.yaml.bungee.YamlBungeeConfigurer;
 import lombok.Getter;
 import net.leaderos.auth.bungee.configuration.Config;
 import net.leaderos.auth.bungee.helpers.DebugBungee;
+import net.leaderos.auth.bungee.listener.IpConnectionLimitListener;
 import net.leaderos.auth.bungee.listener.PlayerListener;
 import net.leaderos.auth.bungee.listener.PluginMessageListener;
 import net.leaderos.auth.shared.Shared;
@@ -40,6 +41,7 @@ public class Bungee extends Plugin {
 
         this.getProxy().getPluginManager().registerListener(this, new PluginMessageListener(this));
         this.getProxy().getPluginManager().registerListener(this, new PlayerListener(this));
+        this.getProxy().getPluginManager().registerListener(this, new IpConnectionLimitListener(this));
 
         String authServerName = configFile.getSettings().getAuthServer();
         ServerInfo serverInfo = getProxy().getServerInfo(authServerName);

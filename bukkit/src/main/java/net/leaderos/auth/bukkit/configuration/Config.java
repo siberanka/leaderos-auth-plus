@@ -79,6 +79,12 @@ public class Config extends OkaeriConfig {
         private int minPasswordLength = 5;
 
         @Comment({
+                "Maximum number of players that can join from the same IP address.",
+                "Set to 0 to disable this feature."
+        })
+        private int maxJoinPerIP = 0;
+
+        @Comment({
                 "Second argument the /register command should take:",
                 "PASSWORD_CONFIRM: password confirmation (/register <password> <password>)",
                 "EMAIL: email address (/register <password> <email>)"

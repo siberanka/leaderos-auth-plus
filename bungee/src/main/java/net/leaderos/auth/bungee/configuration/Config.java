@@ -48,6 +48,14 @@ public class Config extends OkaeriConfig {
         @Comment("List of commands that will be allowed")
         private List<String> allowedCommands = Lists.newArrayList("login", "log", "l", "giris", "giriş", "gir", "register", "reg", "kayit", "kayıt", "kaydol", "tfa", "2fa");
 
+        @Comment({
+                "Maximum number of players that can join from the same IP address.",
+                "Set to 0 to disable this feature."
+        })
+        private int maxJoinPerIP = 0;
+
+        @Comment("Kick message when player reached max connections per IP.")
+        private String kickMaxConnectionsPerIP = "&cToo many connections from your IP address!";
     }
 
 }
