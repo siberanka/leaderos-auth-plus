@@ -87,6 +87,7 @@ public class Language extends OkaeriConfig {
         private Register register = new Register();
         private Login login = new Login();
         private Tfa tfa = new Tfa();
+        private BedrockForms bedrockForms = new BedrockForms();
 
         /**
          * Command object
@@ -153,7 +154,7 @@ public class Language extends OkaeriConfig {
         @Setter
         public static class Tfa extends OkaeriConfig {
 
-            private String title = "&6TFA";
+            private String title = "\u00a76TFA";
 
             private String subtitle = "&e/tfa <code>";
 
@@ -173,6 +174,44 @@ public class Language extends OkaeriConfig {
 
             private String success = "{prefix} &aTwo-factor authentication successful!";
 
+        }
+
+        @Getter
+        @Setter
+        public static class BedrockForms extends OkaeriConfig {
+
+            private LoginForm loginForm = new LoginForm();
+            private RegisterForm registerForm = new RegisterForm();
+            private TfaForm tfaForm = new TfaForm();
+
+            @Getter
+            @Setter
+            public static class LoginForm extends OkaeriConfig {
+                private String title = "Login";
+                private String description = "Please enter your password to log in.";
+                private String passwordLabel = "Password";
+                private String submitButton = "Login";
+            }
+
+            @Getter
+            @Setter
+            public static class RegisterForm extends OkaeriConfig {
+                private String title = "Register";
+                private String description = "Please create a password to register.";
+                private String passwordLabel = "Password";
+                private String confirmPasswordLabel = "Confirm Password";
+                private String emailLabel = "Email";
+                private String submitButton = "Register";
+            }
+
+            @Getter
+            @Setter
+            public static class TfaForm extends OkaeriConfig {
+                private String title = "Two-Factor Authentication";
+                private String description = "Please enter your TFA code.";
+                private String codeLabel = "TFA Code";
+                private String submitButton = "Verify";
+            }
         }
 
         /**

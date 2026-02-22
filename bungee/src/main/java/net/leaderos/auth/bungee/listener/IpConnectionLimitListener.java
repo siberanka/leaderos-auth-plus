@@ -2,7 +2,6 @@ package net.leaderos.auth.bungee.listener;
 
 import lombok.RequiredArgsConstructor;
 import net.leaderos.auth.bungee.Bungee;
-import net.leaderos.auth.shared.Shared;
 import net.md_5.bungee.api.ChatColor;
 import net.md_5.bungee.api.chat.TextComponent;
 import net.md_5.bungee.api.event.PlayerDisconnectEvent;

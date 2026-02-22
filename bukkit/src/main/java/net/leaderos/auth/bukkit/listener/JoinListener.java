@@ -6,6 +6,7 @@ import net.leaderos.auth.bukkit.helpers.BossBarUtil;
 import net.leaderos.auth.bukkit.helpers.ChatUtil;
 import net.leaderos.auth.bukkit.helpers.LocationUtil;
 import net.leaderos.auth.bukkit.helpers.TitleUtil;
+import net.leaderos.auth.bukkit.helpers.BedrockFormManager;
 import net.leaderos.auth.shared.Shared;
 import net.leaderos.auth.shared.enums.SessionState;
 import net.leaderos.auth.shared.helpers.Placeholder;
@@ -52,6 +53,7 @@ public class JoinListener implements Listener {
             // No need for a isSession check here, as we handle it in the ConnectionListener
             if (session.isAuthenticated()) {
                 ChatUtil.sendMessage(player, plugin.getLangFile().getMessages().getLogin().getSuccess());
+                plugin.getAuthMeCompatBridge().callLogin(player);
                 plugin.getFoliaLib().getScheduler().runLater(() -> {
                     plugin.sendStatus(player, true);
                 }, 5);
@@ -165,7 +167,22 @@ public class JoinListener implements Listener {
 
             plugin.getFoliaLib().getScheduler().runLater(() -> {
                 plugin.sendStatus(player, session.isAuthenticated());
+                if (!session.isAuthenticated()) {
+                    plugin.getAuthMeCompatBridge().broadcastUnauthenticated(player);
+                }
             }, 5);
+
+            // Send Bedrock auth form if player is Floodgate/Bedrock and needs to authenticate
+            if (plugin.getConfigFile().getSettings().getBedrock().isEnabled()
+                    && !session.isAuthenticated()
+                    && BedrockFormManager.isBedrockPlayer(player)) {
+                long delay = plugin.getConfigFile().getSettings().getBedrock().getFormDelay();
+                plugin.getFoliaLib().getScheduler().runLater(() -> {
+                    if (player.isOnline() && !plugin.isAuthenticated(player)) {
+                        BedrockFormManager.sendAuthForm(player);
+                    }
+                }, delay);
+            }
         } catch (Exception e) {
             Shared.getDebugAPI().send("ErrorCode PlayerJoinEvent for " + player.getName() + ": " + e.getMessage(), true);
 

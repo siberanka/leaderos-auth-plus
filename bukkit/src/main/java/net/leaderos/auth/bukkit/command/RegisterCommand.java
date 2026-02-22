@@ -34,8 +34,17 @@ public class RegisterCommand extends BaseCommand {
     public void onRegister(Player player, String password, String secondArg) {
         try {
             GameSessionResponse session = plugin.getSessions().get(player.getName());
+            if (session == null) {
+                ChatUtil.sendMessage(player, plugin.getLangFile().getMessages().getAnErrorOccurred());
+                return;
+            }
+
             if (session.isAuthenticated()) {
                 ChatUtil.sendMessage(player, plugin.getLangFile().getMessages().getAlreadyLoggedIn());
+                return;
+            }
+
+            if (!plugin.getAuthMeCompatBridge().callPreRegister(player)) {
                 return;
             }
 
@@ -111,23 +120,14 @@ public class RegisterCommand extends BaseCommand {
                             return;
                         }
 
-                        // Clear title
-                        if (plugin.getConfigFile().getSettings().isShowTitle()) {
-                            TitleUtil.clearTitle(player);
-                        }
-
-                        // Clear boss bar
-                        if (plugin.getConfigFile().getSettings().getBossBar().isEnabled()) {
-                            BossBarUtil.hideBossBar(player);
-                        }
-
-                        session.setState(SessionState.AUTHENTICATED);
                         session.setToken(result.getToken());
                         plugin.getSessions().put(player.getName(), session);
 
+                        plugin.getAuthMeCompatBridge().callRegister(player);
+                        plugin.forceAuthenticate(player);
+
                         ChatUtil.sendConsoleInfo(player.getName() + " has registered successfully.");
                         ChatUtil.sendMessage(player, plugin.getLangFile().getMessages().getRegister().getSuccess());
-                        plugin.sendStatus(player, true);
 
                         if (plugin.getConfigFile().getSettings().getSendAfterAuth().isEnabled()) {
                             plugin.getFoliaLib().getScheduler().runLater(() -> {

@@ -57,23 +57,10 @@ public class TfaCommand extends BaseCommand {
                     }
 
                     if (result.isStatus()) {
-                        // Clear title
-                        if (plugin.getConfigFile().getSettings().isShowTitle()) {
-                            TitleUtil.clearTitle(player);
-                        }
-
-                        // Clear boss bar
-                        if (plugin.getConfigFile().getSettings().getBossBar().isEnabled()) {
-                            BossBarUtil.hideBossBar(player);
-                        }
-
-                        // Change session state to authenticated
-                        session.setState(SessionState.AUTHENTICATED);
-
                         ChatUtil.sendMessage(player, plugin.getLangFile().getMessages().getTfa().getSuccess());
                         ChatUtil.sendConsoleInfo(player.getName() + " has completed TFA verification successfully.");
 
-                        plugin.sendStatus(player, true);
+                        plugin.forceAuthenticate(player);
 
                         if (plugin.getConfigFile().getSettings().getSendAfterAuth().isEnabled()) {
                             plugin.getFoliaLib().getScheduler().runLater(() -> {

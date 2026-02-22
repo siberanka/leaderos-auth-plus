@@ -50,10 +50,10 @@ import java.util.Collections;
 @Plugin(
         id = "leaderosauth",
         name = "LeaderOS-Auth",
-        version = "1.0.5",
+        version = "1.0.5-fork",
         url = "https://leaderos.net",
         description = "LeaderOS Auth for Velocity",
-        authors = {"leaderos", "efekurbann"},
+        authors = {"leaderos", "efekurbann", "siberanka"},
         dependencies = {@Dependency(id = "limboapi")}
 )
 public class Velocity {

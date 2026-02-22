@@ -20,6 +20,7 @@ import net.leaderos.auth.bukkit.configuration.Language;
 import net.leaderos.auth.bukkit.helpers.ChatUtil;
 import net.leaderos.auth.bukkit.helpers.ConsoleLogger;
 import net.leaderos.auth.bukkit.helpers.DebugBukkit;
+import net.leaderos.auth.bukkit.helpers.AuthMeCompatBridge;
 import net.leaderos.auth.bukkit.listener.*;
 import net.leaderos.auth.shared.Shared;
 import net.leaderos.auth.shared.enums.SessionState;
@@ -60,6 +61,8 @@ public class Bukkit extends JavaPlugin {
 
     @Getter
     private final Map<String, GameSessionResponse> sessions = Maps.newHashMap();
+    private AuthMeCompatBridge authMeCompatBridge;
+    private AuthMePluginMessageListener authMePluginMessageListener;
 
     @Override
     public void onEnable() {
@@ -86,6 +89,11 @@ public class Bukkit extends JavaPlugin {
         new Metrics(this, 26804);
 
         getServer().getMessenger().registerOutgoingPluginChannel(this, "BungeeCord");
+        authMePluginMessageListener = new AuthMePluginMessageListener(this);
+        getServer().getMessenger().registerIncomingPluginChannel(this, "BungeeCord", authMePluginMessageListener);
+
+        authMeCompatBridge = new AuthMeCompatBridge(this);
+        authMeCompatBridge.init();
 
         setupCommands();
 
@@ -109,6 +117,13 @@ public class Bukkit extends JavaPlugin {
     @Override
     public void onDisable() {
         foliaLib.getScheduler().cancelAllTasks();
+        if (authMeCompatBridge != null) {
+            authMeCompatBridge.shutdown();
+        }
+        if (authMePluginMessageListener != null) {
+            getServer().getMessenger().unregisterIncomingPluginChannel(this, "BungeeCord", authMePluginMessageListener);
+        }
+        getServer().getMessenger().unregisterOutgoingPluginChannel(this, "BungeeCord");
     }
 
     public void setupFiles() {
@@ -183,6 +198,38 @@ public class Bukkit extends JavaPlugin {
     public boolean isAuthenticated(Player player) {
         GameSessionResponse response = sessions.get(player.getName());
         return response != null && response.getState() == SessionState.AUTHENTICATED;
+    }
+
+    public void forceAuthenticate(Player player) {
+        GameSessionResponse session = sessions.get(player.getName());
+        if (session == null || session.getState() == SessionState.AUTHENTICATED) {
+            return;
+        }
+
+        session.setState(SessionState.AUTHENTICATED);
+
+        if (getConfigFile().getSettings().isShowTitle()) {
+            net.leaderos.auth.bukkit.helpers.TitleUtil.clearTitle(player);
+        }
+
+        if (getConfigFile().getSettings().getBossBar().isEnabled()) {
+            net.leaderos.auth.bukkit.helpers.BossBarUtil.hideBossBar(player);
+        }
+
+        sendStatus(player, true);
+        authMeCompatBridge.callLogin(player);
+    }
+
+    public void forceUnauthenticate(Player player) {
+        GameSessionResponse session = sessions.get(player.getName());
+        if (session == null || session.getState() != SessionState.AUTHENTICATED) {
+            return;
+        }
+
+        session.setState(session.getToken() == null ? SessionState.LOGIN_REQUIRED : SessionState.TFA_REQUIRED);
+
+        sendStatus(player, false);
+        authMeCompatBridge.callLogout(player);
     }
 
     public void cacheAllowedCommands() {

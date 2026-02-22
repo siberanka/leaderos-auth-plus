@@ -7,8 +7,12 @@ import net.md_5.bungee.api.connection.ProxiedPlayer;
 import net.md_5.bungee.api.event.ChatEvent;
 import net.md_5.bungee.api.event.PlayerDisconnectEvent;
 import net.md_5.bungee.api.event.ServerConnectEvent;
+import net.md_5.bungee.api.event.TabCompleteEvent;
 import net.md_5.bungee.api.plugin.Listener;
 import net.md_5.bungee.event.EventHandler;
+
+import java.util.List;
+import java.util.stream.Collectors;
 
 @RequiredArgsConstructor
 public class PlayerListener implements Listener {
@@ -57,6 +61,34 @@ public class PlayerListener implements Listener {
         Shared.getDebugAPI().send("Player tried to connect to a server different than the auth server. " +
                 "Redirecting player " + player.getName() + " to auth server: " + authServer, true);
         event.setTarget(plugin.getProxy().getServerInfo(authServer));
+    }
+
+    @EventHandler
+    public void onTabComplete(TabCompleteEvent event) {
+        if (event.isCancelled()) return;
+        if (!(event.getSender() instanceof ProxiedPlayer)) return;
+        if (!plugin.getConfigFile().getSettings().isHideTabComplete()) return;
+
+        ProxiedPlayer player = (ProxiedPlayer) event.getSender();
+        if (plugin.getAuthenticatedPlayers().getOrDefault(player.getName(), false)) return;
+
+        // Filter suggestions to only include allowed commands
+        String cursor = event.getCursor().toLowerCase();
+        List<String> allowedCommands = plugin.getConfigFile().getSettings().getTabCompleteAllowedCommands();
+
+        if (cursor.startsWith("/")) {
+            // Player is typing a command, filter suggestions
+            String partial = cursor.substring(1).split(" ")[0];
+            List<String> filtered = allowedCommands.stream()
+                    .filter(cmd -> cmd.toLowerCase().startsWith(partial))
+                    .map(cmd -> "/" + cmd)
+                    .collect(Collectors.toList());
+            event.getSuggestions().clear();
+            event.getSuggestions().addAll(filtered);
+        } else {
+            // Not a command, clear all suggestions
+            event.getSuggestions().clear();
+        }
     }
 
 }

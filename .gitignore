@@ -1,12 +1,41 @@
-.idea/compiler.xml
-.idea/encodings.xml
-.idea/jarRepositories.xml
-.idea/leaderos-plugin.iml
-.idea/misc.xml
-.idea/modules.xml
-.idea/vcs.xml
-.idea/workspace.xml
-target
-.idea
+# Build output
+target/
+*.jar
+!gradle/wrapper/*.jar
+
+# IDE - IntelliJ IDEA
+.idea/
 *.iml
+
+# IDE - Eclipse
+.project
+.classpath
+.settings/
+
+# IDE - VS Code
+.vscode/
+
+# OS files
 .DS_Store
+Thumbs.db
+Desktop.ini
+
+# Maven
+pom.xml.tag
+pom.xml.releaseBackup
+pom.xml.versionsBackup
+pom.xml.next
+release.properties
+dependency-reduced-pom.xml
+buildNumber.properties
+.mvn/timing.properties
+.mvn/wrapper/maven-wrapper.jar
+
+# Logs
+*.log
+logs/
+
+# Build tool output
+build_output.txt
+build_err.txt
+build_out*.txt

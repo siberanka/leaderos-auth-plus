@@ -127,7 +127,11 @@ public class ConnectionListener implements Listener {
     @EventHandler
     public void onQuit(PlayerQuitEvent event) {
         Player player = event.getPlayer();
+        plugin.getAuthMeCompatBridge().broadcastUnauthenticated(player);
         plugin.getSessions().remove(player.getName());
+
+        // Cleanup Bedrock form tracking
+        net.leaderos.auth.bukkit.helpers.BedrockFormManager.cleanup(player);
 
         // Clear title
         if (plugin.getConfigFile().getSettings().isShowTitle()) {

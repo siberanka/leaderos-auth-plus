@@ -171,6 +171,19 @@ public class Config extends OkaeriConfig {
         @Comment("List of tfa commands")
         private List<String> tfaCommands = Lists.newArrayList("tfa", "2fa");
 
+        @Comment("Bedrock/Floodgate form settings")
+        private Bedrock bedrock = new Bedrock();
+
+        @Getter
+        @Setter
+        public static class Bedrock extends OkaeriConfig {
+            @Comment("Should Bedrock authentication forms be enabled?")
+            private boolean enabled = true;
+
+            @Comment("Delay in ticks before sending the auth form after joining (20 ticks = 1 second)")
+            private long formDelay = 40;
+        }
+
         @Comment("Blacklist of passwords that cannot be used")
         private List<String> unsafePasswords = Lists.newArrayList("123456", "password", "qwerty", "123456789", "help", "sifre", "12345", "asd123", "qwe123");
     }

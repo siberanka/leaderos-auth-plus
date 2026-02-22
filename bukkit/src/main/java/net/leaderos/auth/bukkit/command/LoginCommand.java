@@ -32,8 +32,17 @@ public class LoginCommand extends BaseCommand {
     public void onLogin(Player player, String password) {
         try {
             GameSessionResponse session = plugin.getSessions().get(player.getName());
+            if (session == null) {
+                ChatUtil.sendMessage(player, plugin.getLangFile().getMessages().getAnErrorOccurred());
+                return;
+            }
+
             if (session.isAuthenticated()) {
                 ChatUtil.sendMessage(player, plugin.getLangFile().getMessages().getAlreadyLoggedIn());
+                return;
+            }
+
+            if (!plugin.getAuthMeCompatBridge().callPreLogin(player)) {
                 return;
             }
 
@@ -86,22 +95,9 @@ public class LoginCommand extends BaseCommand {
                             ChatUtil.sendMessage(player, plugin.getLangFile().getMessages().getTfa().getRequired());
                             ChatUtil.sendMessage(player, plugin.getLangFile().getMessages().getTfa().getUsage());
                         } else {
-                            // Clear title
-                            if (plugin.getConfigFile().getSettings().isShowTitle()) {
-                                TitleUtil.clearTitle(player);
-                            }
-
-                            // Clear boss bar
-                            if (plugin.getConfigFile().getSettings().getBossBar().isEnabled()) {
-                                BossBarUtil.hideBossBar(player);
-                            }
-
-                            // Change session state to authenticated
-                            session.setState(SessionState.AUTHENTICATED);
-
                             ChatUtil.sendConsoleInfo(player.getName() + " has logged in successfully.");
                             ChatUtil.sendMessage(player, plugin.getLangFile().getMessages().getLogin().getSuccess());
-                            plugin.sendStatus(player, true);
+                            plugin.forceAuthenticate(player);
 
                             if (plugin.getConfigFile().getSettings().getSendAfterAuth().isEnabled()) {
                                 plugin.getFoliaLib().getScheduler().runLater(() -> {
@@ -112,6 +108,7 @@ public class LoginCommand extends BaseCommand {
                     } else if (result.getError() == ErrorCode.USER_NOT_FOUND) {
                         ChatUtil.sendMessage(player, plugin.getLangFile().getMessages().getLogin().getAccountNotFound());
                     } else if (result.getError() == ErrorCode.WRONG_PASSWORD) {
+                        plugin.getAuthMeCompatBridge().callFailedLogin(player);
                         if (plugin.getConfigFile().getSettings().isKickOnWrongPassword()) {
                             player.kickPlayer(String.join("\n",
                                     ChatUtil.replacePlaceholders(plugin.getLangFile().getMessages().getKickWrongPassword(),

@@ -87,11 +87,50 @@ public class en extends Language {
         private Register register = new Register();
         private Login login = new Login();
         private Tfa tfa = new Tfa();
+        private BedrockForms bedrockForms = new BedrockForms();
 
         /**
          * Command object
          */
         private Command command = new Command();
+
+        @Getter
+        @Setter
+        public static class BedrockForms extends Language.Messages.BedrockForms {
+
+            private LoginForm loginForm = new LoginForm();
+            private RegisterForm registerForm = new RegisterForm();
+            private TfaForm tfaForm = new TfaForm();
+
+            @Getter
+            @Setter
+            public static class LoginForm extends Language.Messages.BedrockForms.LoginForm {
+                private String title = "Login";
+                private String description = "Please enter your password to log in.";
+                private String passwordLabel = "Password";
+                private String submitButton = "Login";
+            }
+
+            @Getter
+            @Setter
+            public static class RegisterForm extends Language.Messages.BedrockForms.RegisterForm {
+                private String title = "Register";
+                private String description = "Please create a password to register.";
+                private String passwordLabel = "Password";
+                private String confirmPasswordLabel = "Confirm Password";
+                private String emailLabel = "Email";
+                private String submitButton = "Register";
+            }
+
+            @Getter
+            @Setter
+            public static class TfaForm extends Language.Messages.BedrockForms.TfaForm {
+                private String title = "Two-Factor Authentication";
+                private String description = "Please enter your TFA code.";
+                private String codeLabel = "TFA Code";
+                private String submitButton = "Verify";
+            }
+        }
 
         @Getter
         @Setter

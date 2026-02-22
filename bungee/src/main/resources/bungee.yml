@@ -1,4 +1,4 @@
 name: LeaderOS-Auth
 main: net.leaderos.auth.bungee.Bungee
 version: '${shared.version}'
-author: "leaderos, efekurbann"
+author: "leaderos, efekurbann, siberanka"

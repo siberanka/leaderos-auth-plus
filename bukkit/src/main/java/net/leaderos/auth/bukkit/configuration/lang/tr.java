@@ -86,11 +86,50 @@ public class tr extends Language {
         private Register register = new Register();
         private Login login = new Login();
         private Tfa tfa = new Tfa();
+        private BedrockForms bedrockForms = new BedrockForms();
 
         /**
          * Command object
          */
         private Command command = new Command();
+
+        @Getter
+        @Setter
+        public static class BedrockForms extends Language.Messages.BedrockForms {
+
+            private LoginForm loginForm = new LoginForm();
+            private RegisterForm registerForm = new RegisterForm();
+            private TfaForm tfaForm = new TfaForm();
+
+            @Getter
+            @Setter
+            public static class LoginForm extends Language.Messages.BedrockForms.LoginForm {
+                private String title = "Giriş";
+                private String description = "Lütfen giriş yapmak için şifrenizi girin.";
+                private String passwordLabel = "Şifre";
+                private String submitButton = "Giriş Yap";
+            }
+
+            @Getter
+            @Setter
+            public static class RegisterForm extends Language.Messages.BedrockForms.RegisterForm {
+                private String title = "Kayıt";
+                private String description = "Lütfen kayıt olmak için bir şifre oluşturun.";
+                private String passwordLabel = "Şifre";
+                private String confirmPasswordLabel = "Şifre Tekrar";
+                private String emailLabel = "E-posta";
+                private String submitButton = "Kayıt Ol";
+            }
+
+            @Getter
+            @Setter
+            public static class TfaForm extends Language.Messages.BedrockForms.TfaForm {
+                private String title = "İki Faktörlü Doğrulama";
+                private String description = "Lütfen TFA kodunuzu girin.";
+                private String codeLabel = "TFA Kodu";
+                private String submitButton = "Doğrula";
+            }
+        }
 
         @Getter
         @Setter

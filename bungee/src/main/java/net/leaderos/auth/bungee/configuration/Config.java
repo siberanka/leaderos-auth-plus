@@ -48,6 +48,17 @@ public class Config extends OkaeriConfig {
         @Comment("List of commands that will be allowed")
         private List<String> allowedCommands = Lists.newArrayList("login", "log", "l", "giris", "giriş", "gir", "register", "reg", "kayit", "kayıt", "kaydol", "tfa", "2fa");
 
+        @Comment("Should tab-complete be hidden for unauthenticated players?")
+        private boolean hideTabComplete = true;
+
+        @Comment({
+                "List of commands that will be shown in tab-complete for unauthenticated players",
+                "Only used when hide-tab-complete is enabled"
+        })
+        private List<String> tabCompleteAllowedCommands = Lists.newArrayList(
+                "2fa", "gir", "giriş", "kaydol", "kayıt", "l", "log", "login", "reg", "register", "tfa"
+        );
+
         @Comment({
                 "Maximum number of players that can join from the same IP address.",
                 "Set to 0 to disable this feature."
@@ -56,6 +67,7 @@ public class Config extends OkaeriConfig {
 
         @Comment("Kick message when player reached max connections per IP.")
         private String kickMaxConnectionsPerIP = "&cToo many connections from your IP address!";
+
     }
 
 }
