@@ -27,12 +27,15 @@
 - **Tam Yerelleştirme** — Tüm form metinleri `lang/en.yml` ve `lang/tr.yml` ile yapılandırılabilir
 
 #### 🛡️ Güvenlik
-- **IP Bağlantı Limiti** — IP başına yapılandırılabilir maksimum eşzamanlı bağlantı sayısı (Bukkit, BungeeCord, Velocity)
+- **IP Bağlantı Limiti** — IP başına yapılandırılabilir maksimum eşzamanlı bağlantı sayısı, atomik sayaç ile race condition korumalı (Bukkit, BungeeCord, Velocity)
 - **Komut Engelleme** — Giriş yapmamış oyuncular yalnızca kimlik doğrulama komutlarını kullanabilir
-- **Tab-Complete Gizleme** — Giriş yapmamış oyunculara sadece auth komutları gösterilir (BungeeCord)
+- **Tab-Complete Gizleme** — Giriş yapmamış oyunculara sadece auth komutları gösterilir, namespace'li komutlar da filtrelenir (Bukkit 1.13+, BungeeCord)
+- **Komut Cooldown** — Giriş yapmamış oyuncular için komut spam koruması (Bukkit, Velocity)
 - **Eylem Engelleme** — Giriş yapmamış oyuncular hareket edemez, sohbet edemez, etkileşimde bulunamaz, blok kırıp/koyamaz
 - **Anti-Bot** — IP tabanlı bağlantı sınırlaması bot saldırılarını önlemeye yardımcı olur
 - **Kullanıcı Adı Doğrulama** — Büyük/küçük harf uyumsuzluğu tespiti ve geçersiz kullanıcı adı engelleme
+- **Konsol Log Filtreleme** — Kimlik doğrulama komutları konsolda gizlenir (şifre sızıntısını önler)
+- **Thread-Safe Oturum Yönetimi** — ConcurrentHashMap ile güvenli eşzamanlı erişim
 
 #### 🌍 Çoklu Dil Desteği
 - **İngilizce (`en`)** ve **Türkçe (`tr`)** dil dosyaları dahil
@@ -42,17 +45,17 @@
 
 | Platform | Özellikler |
 |----------|-----------|
-| **Bukkit / Spigot / Paper** | Tam auth, Bedrock formlar, başlıklar, boss bar, spawn ışınlama, AuthMe köprüsü |
+| **Bukkit / Spigot / Paper** | Tam auth, Bedrock Floodgate formları, başlıklar, boss bar, spawn ışınlama, AuthMe API köprüsü, tab-complete koruması (1.13+), komut cooldown |
 | **Folia** | Tam Folia uyumluluğu (`folia-supported: true`) |
 | **BungeeCord** | Auth sunucuya yönlendirme, komut/sohbet engelleme, tab-complete gizleme, IP limiti |
-| **Velocity** | LimboAPI entegrasyonu, özel dünya desteği, tam auth akışı, IP limiti |
+| **Velocity** | LimboAPI entegrasyonu, özel dünya desteği, tam auth akışı, komut cooldown, IP limiti |
 
 #### 📊 Ek Özellikler
 - **Başlık & Boss Bar** — Özelleştirilebilir başlık ve boss bar kimlik doğrulama uyarıları
 - **Spawn Işınlama** — Kimlik doğrulama sırasında oyuncuları spawn'a ışınlama
 - **Oyun Modu Zorlama** — Giriş yapmamış oyuncular için survival modu zorlama
 - **Auth Sonrası Gönderme** — Kimlik doğrulama sonrası başka sunucuya yönlendirme
-- **AuthMe Uyumluluğu** — Tam AuthMe köprüsü entegrasyonu
+- **AuthMe API Köprüsü** — Tam AuthMe API entegrasyonu (AuthMeApi, FailedLoginEvent, LoginEvent, RegisterEvent, LogoutEvent, BungeeCord plugin message desteği)
 - **bStats Metrikleri** — Sunucu metrikleri toplama
 - **PlaceholderAPI** — Placeholder desteği (Bukkit)
 
@@ -101,12 +104,15 @@
 - **Fully Localized** — All form text configurable via `lang/en.yml` and `lang/tr.yml`
 
 #### 🛡️ Security
-- **IP Connection Limit** — Configurable maximum number of concurrent connections per IP address (Bukkit, BungeeCord, Velocity)
+- **IP Connection Limit** — Configurable max concurrent connections per IP, atomic counter to prevent race conditions (Bukkit, BungeeCord, Velocity)
 - **Command Blocking** — Only authentication commands are allowed for unauthenticated players
-- **Tab-Complete Hiding** — Hides all commands from tab-completion except auth commands (BungeeCord)
+- **Tab-Complete Hiding** — Hides all commands from tab-completion except auth commands, including namespaced commands (Bukkit 1.13+, BungeeCord)
+- **Command Cooldown** — Rate-limiting for unauthenticated player commands to prevent API flooding (Bukkit, Velocity)
 - **Action Blocking** — Unauthenticated players cannot move, chat, interact, break/place blocks, open inventories, or perform any action
 - **Anti-Bot** — IP-based connection limiting helps prevent bot attacks
 - **Username Validation** — Username case mismatch detection and invalid username blocking
+- **Console Log Filtering** — Authentication commands are hidden from console logs (prevents password leaks)
+- **Thread-Safe Session Management** — ConcurrentHashMap for safe concurrent access
 
 #### 🌍 Multi-Language Support
 - **English (`en`)** and **Turkish (`tr`)** language files included
@@ -116,17 +122,17 @@
 
 | Platform | Features |
 |----------|----------|
-| **Bukkit / Spigot / Paper** | Full auth, Bedrock forms, titles, boss bar, spawn teleport, AuthMe bridge |
+| **Bukkit / Spigot / Paper** | Full auth, Bedrock Floodgate forms, titles, boss bar, spawn teleport, AuthMe API bridge, tab-complete protection (1.13+), command cooldown |
 | **Folia** | Full Folia compatibility (`folia-supported: true`) |
 | **BungeeCord** | Auth server redirection, command/chat blocking, tab-complete hiding, IP limit |
-| **Velocity** | LimboAPI integration, custom world support, full auth flow, IP limit |
+| **Velocity** | LimboAPI integration, custom world support, full auth flow, command cooldown, IP limit |
 
 #### 📊 Additional Features
 - **Title & Boss Bar** — Customizable title and boss bar prompts for authentication
 - **Spawn Teleport** — Force teleport players to spawn during authentication
 - **Gamemode Forcing** — Force survival gamemode for unauthenticated players
 - **Send After Auth** — Redirect players to another server after authentication
-- **AuthMe Compatibility** — Full AuthMe bridge integration (soft dependency)
+- **AuthMe API Bridge** — Full AuthMe API integration (AuthMeApi, FailedLoginEvent, LoginEvent, RegisterEvent, LogoutEvent, BungeeCord plugin message support)
 - **bStats Metrics** — Server metrics collection
 - **PlaceholderAPI** — Placeholder support (Bukkit)
 

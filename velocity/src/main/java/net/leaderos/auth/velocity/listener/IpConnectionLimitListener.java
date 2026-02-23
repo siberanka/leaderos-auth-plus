@@ -22,29 +22,37 @@ public class IpConnectionLimitListener {
     @Subscribe(order = PostOrder.LAST)
     public void onJoin(PreLoginEvent event) {
         // Ignore if max connections per IP is not enabled
-        if (plugin.getConfigFile().getSettings().getMaxJoinPerIP() <= 0) return;
+        if (plugin.getConfigFile().getSettings().getMaxJoinPerIP() <= 0)
+            return;
 
         String ip = event.getConnection().getRemoteAddress().getAddress().getHostAddress();
-        int current = ipConnections.getOrDefault(ip, 0);
+        int maxPerIP = plugin.getConfigFile().getSettings().getMaxJoinPerIP();
 
-        // Deny the connection if the max connections per IP is reached
-        if (current >= plugin.getConfigFile().getSettings().getMaxJoinPerIP()) {
+        // Atomically check and increment the connection count
+        boolean[] denied = { false };
+        ipConnections.compute(ip, (k, current) -> {
+            int count = current == null ? 0 : current;
+            if (count >= maxPerIP) {
+                denied[0] = true;
+                return current; // Don't increment
+            }
+            return count + 1;
+        });
+
+        if (denied[0]) {
             event.setResult(PreLoginEvent.PreLoginComponentResult.denied(
                     Component.join(JoinConfiguration.newlines(),
-                            ChatUtil.replacePlaceholders(plugin.getLangFile().getMessages().getKickMaxConnectionsPerIP(),
-                                    new Placeholder("{prefix}", plugin.getLangFile().getMessages().getPrefix())))
-            ));
-            return;
+                            ChatUtil.replacePlaceholders(
+                                    plugin.getLangFile().getMessages().getKickMaxConnectionsPerIP(),
+                                    new Placeholder("{prefix}", plugin.getLangFile().getMessages().getPrefix())))));
         }
-
-        // Increase the connection count for the IP
-        ipConnections.put(ip, current + 1);
     }
 
     @Subscribe
     public void onDisconnect(DisconnectEvent event) {
         // Ignore if max connections per IP is not enabled
-        if (plugin.getConfigFile().getSettings().getMaxJoinPerIP() <= 0) return;
+        if (plugin.getConfigFile().getSettings().getMaxJoinPerIP() <= 0)
+            return;
 
         // Decrease the connection count for the IP
         String ip = event.getPlayer().getRemoteAddress().getAddress().getHostAddress();

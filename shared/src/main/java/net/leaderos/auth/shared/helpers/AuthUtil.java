@@ -19,37 +19,40 @@ import java.util.concurrent.Executors;
 
 public class AuthUtil {
 
-    private static final Executor EXECUTOR = Executors.newSingleThreadExecutor();
+    private static final Executor EXECUTOR = Executors.newFixedThreadPool(4);
 
-    public static CompletableFuture<GameSessionResponse> checkGameSession(String username, String ip, String userAgent) {
+    public static CompletableFuture<GameSessionResponse> checkGameSession(String username, String ip,
+            String userAgent) {
         return CompletableFuture.supplyAsync(() -> {
             try {
                 SessionRequest request = new SessionRequest(username, ip, userAgent);
                 Response response = request.getResponse();
 
-                if (response.isStatus() && response.getError() == null && response.getResponseMessage().getJSONObject("data") != null) {
+                if (response.isStatus() && response.getError() == null
+                        && response.getResponseMessage().getJSONObject("data") != null) {
                     String sessionUsername = null;
                     if (response.getResponseMessage().getJSONObject("data").optJSONObject("user") != null) {
-                        sessionUsername = response.getResponseMessage().getJSONObject("data").getJSONObject("user").optString("realname", null);
+                        sessionUsername = response.getResponseMessage().getJSONObject("data").getJSONObject("user")
+                                .optString("realname", null);
                     }
 
                     return new GameSessionResponse(
                             true,
                             null,
-                            SessionState.valueOf(response.getResponseMessage().getJSONObject("data").getString("state")),
+                            SessionState
+                                    .valueOf(response.getResponseMessage().getJSONObject("data").getString("state")),
                             response.getResponseMessage().getJSONObject("data").optString("token", null),
-                            sessionUsername
-                    );
+                            sessionUsername);
                 }
 
                 // Error response
                 return new GameSessionResponse(
                         false,
-                        response.getError() != null ? ErrorCode.valueOf(response.getError().name()) : ErrorCode.UNKNOWN_ERROR,
+                        response.getError() != null ? ErrorCode.valueOf(response.getError().name())
+                                : ErrorCode.UNKNOWN_ERROR,
                         null,
                         null,
-                        null
-                );
+                        null);
 
             } catch (IOException e) {
                 throw new RuntimeException(e);
@@ -57,58 +60,61 @@ public class AuthUtil {
         }, EXECUTOR);
     }
 
-    public static CompletableFuture<LoginResponse> login(String username, String password, String ip, String userAgent) {
+    public static CompletableFuture<LoginResponse> login(String username, String password, String ip,
+            String userAgent) {
         return CompletableFuture.supplyAsync(() -> {
             try {
                 LoginRequest request = new LoginRequest(username, password, ip, userAgent);
                 Response response = request.getResponse();
 
-                if (response.isStatus() && response.getError() == null && response.getResponseMessage().getJSONObject("data") != null) {
+                if (response.isStatus() && response.getError() == null
+                        && response.getResponseMessage().getJSONObject("data") != null) {
                     // Successful response
                     return new LoginResponse(
                             true,
                             null,
                             response.getResponseMessage().getJSONObject("data").getString("token"),
-                            response.getResponseMessage().getJSONObject("data").getBoolean("isTfaRequired")
-                    );
+                            response.getResponseMessage().getJSONObject("data").getBoolean("isTfaRequired"));
                 }
 
                 // Error response
                 return new LoginResponse(
                         false,
-                        response.getError() != null ? ErrorCode.valueOf(response.getError().name()) : ErrorCode.UNKNOWN_ERROR,
+                        response.getError() != null ? ErrorCode.valueOf(response.getError().name())
+                                : ErrorCode.UNKNOWN_ERROR,
                         null,
-                        false
-                );
+                        false);
             } catch (IOException e) {
                 throw new RuntimeException(e);
             }
         }, EXECUTOR);
     }
 
-    public static CompletableFuture<RegisterResponse> register(String username, String password, String email, String ip, String userAgent) {
+    public static CompletableFuture<RegisterResponse> register(String username, String password, String email,
+            String ip, String userAgent) {
         return CompletableFuture.supplyAsync(() -> {
             try {
                 RegisterRequest request = new RegisterRequest(username, password, email, ip, userAgent);
                 Response response = request.getResponse();
 
-                if (response.isStatus() && response.getError() == null && response.getResponseMessage().getJSONObject("data") != null) {
+                if (response.isStatus() && response.getError() == null
+                        && response.getResponseMessage().getJSONObject("data") != null) {
                     // Successful response
                     return new RegisterResponse(
                             true,
                             null,
                             response.getResponseMessage().getJSONObject("data").getString("token"),
-                            response.getResponseMessage().getJSONObject("data").getBoolean("isEmailVerificationRequired")
-                    );
+                            response.getResponseMessage().getJSONObject("data")
+                                    .getBoolean("isEmailVerificationRequired"));
                 }
 
                 // Error response
                 return new RegisterResponse(
                         false,
-                        response.getError() != null ? ErrorCode.valueOf(response.getError().name()) : ErrorCode.UNKNOWN_ERROR,
+                        response.getError() != null ? ErrorCode.valueOf(response.getError().name())
+                                : ErrorCode.UNKNOWN_ERROR,
                         null,
-                        false
-                );
+                        false);
             } catch (IOException e) {
                 throw new RuntimeException(e);
             }
@@ -126,8 +132,8 @@ public class AuthUtil {
 
                 return new VerifyTfaResponse(
                         false,
-                        response.getError() != null ? ErrorCode.valueOf(response.getError().name()) : ErrorCode.UNKNOWN_ERROR
-                );
+                        response.getError() != null ? ErrorCode.valueOf(response.getError().name())
+                                : ErrorCode.UNKNOWN_ERROR);
             } catch (IOException e) {
                 throw new RuntimeException(e);
             }

@@ -1,7 +1,6 @@
 package net.leaderos.auth.bukkit;
 
 import com.google.common.collect.Lists;
-import com.google.common.collect.Maps;
 import com.google.common.io.ByteArrayDataOutput;
 import com.google.common.io.ByteStreams;
 import com.tcoded.folialib.FoliaLib;
@@ -60,7 +59,7 @@ public class Bukkit extends JavaPlugin {
     private List<String> allowedCommands;
 
     @Getter
-    private final Map<String, GameSessionResponse> sessions = Maps.newHashMap();
+    private final Map<String, GameSessionResponse> sessions = new java.util.concurrent.ConcurrentHashMap<>();
     private AuthMeCompatBridge authMeCompatBridge;
     private AuthMePluginMessageListener authMePluginMessageListener;
 
@@ -77,13 +76,14 @@ public class Bukkit extends JavaPlugin {
         this.shared = new Shared(
                 UrlUtil.format(getConfigFile().getSettings().getUrl()),
                 getConfigFile().getSettings().getApiKey(),
-                new DebugBukkit()
-        );
+                new DebugBukkit());
 
         if (getConfigFile().getSettings().getUrl().equals("https://yourwebsite.com")) {
-            getLogger().warning("You have not set the API URL in the config.yml file. Please set it to your LeaderOS URL.");
+            getLogger().warning(
+                    "You have not set the API URL in the config.yml file. Please set it to your LeaderOS URL.");
         } else if (getConfigFile().getSettings().getUrl().startsWith("http://")) {
-            getLogger().warning("You are using an insecure URL (http://) for the API. Please use https:// for security reasons.");
+            getLogger().warning(
+                    "You are using an insecure URL (http://) for the API. Please use https:// for security reasons.");
         }
 
         new Metrics(this, 26804);
@@ -111,6 +111,10 @@ public class Bukkit extends JavaPlugin {
         // Register listener for 1.11 events if available
         if (isClassLoaded("org.bukkit.event.entity.EntityAirChangeEvent")) {
             getServer().getPluginManager().registerEvents(new PlayerListener111(this), this);
+        }
+        // Register tab-complete protection for 1.13+ servers
+        if (isClassLoaded("org.bukkit.event.player.PlayerCommandSendEvent")) {
+            getServer().getPluginManager().registerEvents(new TabCompleteListener(this), this);
         }
     }
 
@@ -155,23 +159,22 @@ public class Bukkit extends JavaPlugin {
                 new LeaderOSCommand(),
                 new LoginCommand(this, "login", getConfigFile().getSettings().getLoginCommands()),
                 new RegisterCommand(this, "register", getConfigFile().getSettings().getRegisterCommands()),
-                new TfaCommand(this, "tfa", getConfigFile().getSettings().getTfaCommands())
-        );
+                new TfaCommand(this, "tfa", getConfigFile().getSettings().getTfaCommands()));
 
-        commandManager.registerMessage(MessageKey.INVALID_ARGUMENT, (sender, invalidArgumentContext) ->
-                ChatUtil.sendMessage(sender, getLangFile().getMessages().getCommand().getInvalidArgument()));
+        commandManager.registerMessage(MessageKey.INVALID_ARGUMENT, (sender, invalidArgumentContext) -> ChatUtil
+                .sendMessage(sender, getLangFile().getMessages().getCommand().getInvalidArgument()));
 
-        commandManager.registerMessage(MessageKey.UNKNOWN_COMMAND, (sender, invalidArgumentContext) ->
-                ChatUtil.sendMessage(sender, getLangFile().getMessages().getCommand().getUnknownCommand()));
+        commandManager.registerMessage(MessageKey.UNKNOWN_COMMAND, (sender, invalidArgumentContext) -> ChatUtil
+                .sendMessage(sender, getLangFile().getMessages().getCommand().getUnknownCommand()));
 
-        commandManager.registerMessage(MessageKey.NOT_ENOUGH_ARGUMENTS, (sender, invalidArgumentContext) ->
-                ChatUtil.sendMessage(sender, getLangFile().getMessages().getCommand().getNotEnoughArguments()));
+        commandManager.registerMessage(MessageKey.NOT_ENOUGH_ARGUMENTS, (sender, invalidArgumentContext) -> ChatUtil
+                .sendMessage(sender, getLangFile().getMessages().getCommand().getNotEnoughArguments()));
 
-        commandManager.registerMessage(MessageKey.TOO_MANY_ARGUMENTS, (sender, invalidArgumentContext) ->
-                ChatUtil.sendMessage(sender, getLangFile().getMessages().getCommand().getTooManyArguments()));
+        commandManager.registerMessage(MessageKey.TOO_MANY_ARGUMENTS, (sender, invalidArgumentContext) -> ChatUtil
+                .sendMessage(sender, getLangFile().getMessages().getCommand().getTooManyArguments()));
 
-        commandManager.registerMessage(BukkitMessageKey.NO_PERMISSION, (sender, invalidArgumentContext) ->
-                ChatUtil.sendMessage(sender, getLangFile().getMessages().getCommand().getNoPerm()));
+        commandManager.registerMessage(BukkitMessageKey.NO_PERMISSION, (sender, invalidArgumentContext) -> ChatUtil
+                .sendMessage(sender, getLangFile().getMessages().getCommand().getNoPerm()));
     }
 
     public void sendPlayerToServer(Player player, String server) {
@@ -277,11 +280,11 @@ public class Bukkit extends JavaPlugin {
                 if (updater.checkForUpdates()) {
                     String msg = ChatUtil.replacePlaceholders(
                             Bukkit.getInstance().getLangFile().getMessages().getUpdate(),
-                            new Placeholder("%version%", updater.getLatestVersion())
-                    );
+                            new Placeholder("%version%", updater.getLatestVersion()));
                     ChatUtil.sendMessage(org.bukkit.Bukkit.getConsoleSender(), msg);
                 }
-            } catch (Exception ignored) {}
+            } catch (Exception ignored) {
+            }
         });
     }
 
