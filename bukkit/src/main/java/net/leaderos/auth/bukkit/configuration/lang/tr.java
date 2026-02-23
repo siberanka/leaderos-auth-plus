@@ -79,11 +79,52 @@ public class tr extends Language {
         private Login login = new Login();
         private Tfa tfa = new Tfa();
         private BedrockForms bedrockForms = new BedrockForms();
+        private Alt alt = new Alt();
 
         /**
          * Command object
          */
         private Command command = new Command();
+
+        /**
+         * Discord webhook messages
+         */
+        private Discord discord = new Discord();
+
+        @Getter
+        @Setter
+        public static class Alt extends Language.Messages.Alt {
+
+            private String joinPlayerPrefix = "&b[AltDetector] ";
+
+            private String joinPlayer = "{player} şu oyuncunun yan hesabı olabilir: ";
+
+            private String joinPlayerList = "{player}";
+
+            private String joinPlayerSeparator = ", ";
+
+            private String cmdPlayer = "&c{player}&6 şu oyuncunun yan hesabı olabilir: ";
+
+            private String cmdPlayerList = "&c{player}";
+
+            private String cmdPlayerSeparator = "&6, ";
+
+            private String cmdPlayerNoAlts = "&c{player}&6 bilinen bir yan hesabı yok";
+
+            private String cmdNoAlts = "&6Yan hesap bulunamadı";
+
+            private String cmdPlayerNotFound = "&4{player} bulunamadı";
+
+            private String cmdParamError = "&4En fazla bir oyuncu belirtmelisiniz";
+
+            private String cmdNoPerm = "&4Bu komutu kullanma izniniz yok";
+
+            private String cmdDeletedSingular = "&6{amount} kayıt silindi";
+
+            private String cmdDeletedPlural = "&6{amount} kayıt silindi";
+
+            private String cmdDeletedNotFound = "&c{player} için silinecek kayıt bulunamadı";
+        }
 
         @Getter
         @Setter

@@ -80,11 +80,52 @@ public class en extends Language {
         private Login login = new Login();
         private Tfa tfa = new Tfa();
         private BedrockForms bedrockForms = new BedrockForms();
+        private Alt alt = new Alt();
 
         /**
          * Command object
          */
         private Command command = new Command();
+
+        /**
+         * Discord webhook messages
+         */
+        private Discord discord = new Discord();
+
+        @Getter
+        @Setter
+        public static class Alt extends Language.Messages.Alt {
+
+            private String joinPlayerPrefix = "&b[AltDetector] ";
+
+            private String joinPlayer = "{player} may be an alt of: ";
+
+            private String joinPlayerList = "{player}";
+
+            private String joinPlayerSeparator = ", ";
+
+            private String cmdPlayer = "&c{player}&6 may be an alt of: ";
+
+            private String cmdPlayerList = "&c{player}";
+
+            private String cmdPlayerSeparator = "&6, ";
+
+            private String cmdPlayerNoAlts = "&c{player}&6 has no known alt accounts";
+
+            private String cmdNoAlts = "&6No alt accounts found";
+
+            private String cmdPlayerNotFound = "&4{player} not found";
+
+            private String cmdParamError = "&4You may only specify one player";
+
+            private String cmdNoPerm = "&4You do not have permission to use this command";
+
+            private String cmdDeletedSingular = "&6{amount} record deleted";
+
+            private String cmdDeletedPlural = "&6{amount} records deleted";
+
+            private String cmdDeletedNotFound = "&c No records found for {player}";
+        }
 
         @Getter
         @Setter

@@ -22,7 +22,8 @@ import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * Manages Bedrock/Floodgate form-based authentication.
- * All form text is loaded from the language configuration — no hardcoded messages.
+ * All form text is loaded from the language configuration — no hardcoded
+ * messages.
  */
 public class BedrockFormManager {
 
@@ -40,7 +41,8 @@ public class BedrockFormManager {
     }
 
     public static boolean isBedrockPlayer(Player player) {
-        if (!isFloodgateAvailable()) return false;
+        if (!isFloodgateAvailable())
+            return false;
         try {
             return FloodgateApi.getInstance().isFloodgatePlayer(player.getUniqueId());
         } catch (Exception e) {
@@ -51,7 +53,8 @@ public class BedrockFormManager {
     public static void sendAuthForm(Player player) {
         Bukkit plugin = Bukkit.getInstance();
         GameSessionResponse session = plugin.getSessions().get(player.getName());
-        if (session == null || session.isAuthenticated()) return;
+        if (session == null || session.isAuthenticated())
+            return;
 
         if (session.getState() == SessionState.LOGIN_REQUIRED) {
             sendLoginForm(player);
@@ -63,35 +66,46 @@ public class BedrockFormManager {
     }
 
     public static void sendLoginForm(Player player) {
-        if (!acquireFormLock(player)) return;
+        if (!acquireFormLock(player))
+            return;
 
         Bukkit plugin = Bukkit.getInstance();
-        Language.Messages.BedrockForms.LoginForm formLang =
-                plugin.getLangFile().getMessages().getBedrockForms().getLoginForm();
+        Language.Messages.BedrockForms.LoginForm formLang = plugin.getLangFile().getMessages().getBedrockForms()
+                .getLoginForm();
 
         CustomForm form = CustomForm.builder()
                 .title(formLang.getTitle())
                 .label(formLang.getDescription())
                 .input(formLang.getPasswordLabel())
-                .closedOrInvalidResultHandler(() -> releaseFormLock(player))
+                .closedOrInvalidResultHandler(() -> {
+                    releaseFormLock(player);
+                    resendFormLater(player);
+                })
                 .validResultHandler((response) -> {
                     releaseFormLock(player);
-                    if (!checkCooldown(player)) return;
-                    if (!player.isOnline()) return;
+                    if (!checkCooldown(player))
+                        return;
+                    if (!player.isOnline())
+                        return;
 
                     GameSessionResponse session = plugin.getSessions().get(player.getName());
-                    if (session == null || session.getState() != SessionState.LOGIN_REQUIRED) return;
+                    if (session == null || session.getState() != SessionState.LOGIN_REQUIRED)
+                        return;
 
                     String password = response.next();
-                    if (password == null || password.trim().isEmpty()) return;
-                    if (player.getAddress() == null) return;
+                    if (password == null || password.trim().isEmpty())
+                        return;
+                    if (player.getAddress() == null)
+                        return;
 
                     String ip = player.getAddress().getAddress().getHostAddress();
-                    String userAgent = UserAgentUtil.generateUserAgent(!plugin.getConfigFile().getSettings().isSession());
+                    String userAgent = UserAgentUtil
+                            .generateUserAgent(!plugin.getConfigFile().getSettings().isSession());
 
                     AuthUtil.login(player.getName(), password, ip, userAgent).whenComplete((result, ex) -> {
                         plugin.getFoliaLib().getScheduler().runNextTick((task) -> {
-                            if (!player.isOnline()) return;
+                            if (!player.isOnline())
+                                return;
 
                             if (ex != null) {
                                 ChatUtil.sendMessage(player, plugin.getLangFile().getMessages().getAnErrorOccurred());
@@ -107,34 +121,42 @@ public class BedrockFormManager {
                                     if (plugin.getConfigFile().getSettings().isShowTitle()) {
                                         TitleUtil.sendTitle(player,
                                                 ChatUtil.color(plugin.getLangFile().getMessages().getTfa().getTitle()),
-                                                ChatUtil.color(plugin.getLangFile().getMessages().getTfa().getSubtitle()),
+                                                ChatUtil.color(
+                                                        plugin.getLangFile().getMessages().getTfa().getSubtitle()),
                                                 0, plugin.getConfigFile().getSettings().getAuthTimeout() * 20, 10);
                                     }
-                                    ChatUtil.sendMessage(player, plugin.getLangFile().getMessages().getTfa().getRequired());
+                                    ChatUtil.sendMessage(player,
+                                            plugin.getLangFile().getMessages().getTfa().getRequired());
                                     resendFormLater(player);
                                 } else {
                                     ChatUtil.sendConsoleInfo(player.getName() + " has logged in successfully.");
-                                    ChatUtil.sendMessage(player, plugin.getLangFile().getMessages().getLogin().getSuccess());
+                                    ChatUtil.sendMessage(player,
+                                            plugin.getLangFile().getMessages().getLogin().getSuccess());
                                     plugin.forceAuthenticate(player);
 
                                     if (plugin.getConfigFile().getSettings().getSendAfterAuth().isEnabled()) {
                                         plugin.getFoliaLib().getScheduler().runLater(() -> {
-                                            plugin.sendPlayerToServer(player, plugin.getConfigFile().getSettings().getSendAfterAuth().getServer());
+                                            plugin.sendPlayerToServer(player, plugin.getConfigFile().getSettings()
+                                                    .getSendAfterAuth().getServer());
                                         }, 20L);
                                     }
                                 }
                             } else if (result.getError() == ErrorCode.USER_NOT_FOUND) {
-                                ChatUtil.sendMessage(player, plugin.getLangFile().getMessages().getLogin().getAccountNotFound());
+                                ChatUtil.sendMessage(player,
+                                        plugin.getLangFile().getMessages().getLogin().getAccountNotFound());
                                 resendFormLater(player);
                             } else if (result.getError() == ErrorCode.WRONG_PASSWORD) {
                                 plugin.getAuthMeCompatBridge().callFailedLogin(player);
                                 if (plugin.getConfigFile().getSettings().isKickOnWrongPassword()) {
                                     player.kickPlayer(String.join("\n",
-                                            ChatUtil.replacePlaceholders(plugin.getLangFile().getMessages().getKickWrongPassword(),
-                                                    new Placeholder("{prefix}", plugin.getLangFile().getMessages().getPrefix()))));
+                                            ChatUtil.replacePlaceholders(
+                                                    plugin.getLangFile().getMessages().getKickWrongPassword(),
+                                                    new Placeholder("{prefix}",
+                                                            plugin.getLangFile().getMessages().getPrefix()))));
                                     return;
                                 }
-                                ChatUtil.sendMessage(player, plugin.getLangFile().getMessages().getLogin().getIncorrectPassword());
+                                ChatUtil.sendMessage(player,
+                                        plugin.getLangFile().getMessages().getLogin().getIncorrectPassword());
                                 resendFormLater(player);
                             } else {
                                 Shared.getDebugAPI().send("Bedrock login error: " + result, true);
@@ -155,11 +177,12 @@ public class BedrockFormManager {
     }
 
     public static void sendRegisterForm(Player player) {
-        if (!acquireFormLock(player)) return;
+        if (!acquireFormLock(player))
+            return;
 
         Bukkit plugin = Bukkit.getInstance();
-        Language.Messages.BedrockForms.RegisterForm formLang =
-                plugin.getLangFile().getMessages().getBedrockForms().getRegisterForm();
+        Language.Messages.BedrockForms.RegisterForm formLang = plugin.getLangFile().getMessages().getBedrockForms()
+                .getRegisterForm();
 
         RegisterSecondArg secondArgType = plugin.getConfigFile().getSettings().getRegisterSecondArg();
 
@@ -173,21 +196,30 @@ public class BedrockFormManager {
             builder.input(formLang.getEmailLabel());
         }
 
-        builder.closedOrInvalidResultHandler(() -> releaseFormLock(player));
+        builder.closedOrInvalidResultHandler(() -> {
+            releaseFormLock(player);
+            resendFormLater(player);
+        });
         builder.validResultHandler((response) -> {
             releaseFormLock(player);
-            if (!checkCooldown(player)) return;
-            if (!player.isOnline()) return;
+            if (!checkCooldown(player))
+                return;
+            if (!player.isOnline())
+                return;
 
             GameSessionResponse session = plugin.getSessions().get(player.getName());
-            if (session == null || session.getState() != SessionState.REGISTER_REQUIRED) return;
-            if (player.getAddress() == null) return;
+            if (session == null || session.getState() != SessionState.REGISTER_REQUIRED)
+                return;
+            if (player.getAddress() == null)
+                return;
 
             String password = response.next();
             String confirmPassword = response.next();
 
-            if (password == null || password.trim().isEmpty()) return;
-            if (confirmPassword == null || confirmPassword.trim().isEmpty()) return;
+            if (password == null || password.trim().isEmpty())
+                return;
+            if (confirmPassword == null || confirmPassword.trim().isEmpty())
+                return;
 
             if (secondArgType == RegisterSecondArg.PASSWORD_CONFIRM && !password.equals(confirmPassword)) {
                 ChatUtil.sendMessage(player, plugin.getLangFile().getMessages().getRegister().getPasswordMismatch());
@@ -222,7 +254,8 @@ public class BedrockFormManager {
             String email = null;
             if (secondArgType == RegisterSecondArg.EMAIL) {
                 email = response.next();
-                if (email == null || email.trim().isEmpty()) return;
+                if (email == null || email.trim().isEmpty())
+                    return;
             }
 
             String ip = player.getAddress().getAddress().getHostAddress();
@@ -231,7 +264,8 @@ public class BedrockFormManager {
             final String finalEmail = email;
             AuthUtil.register(player.getName(), password, finalEmail, ip, userAgent).whenComplete((result, ex) -> {
                 plugin.getFoliaLib().getScheduler().runNextTick((task) -> {
-                    if (!player.isOnline()) return;
+                    if (!player.isOnline())
+                        return;
 
                     if (ex != null) {
                         ChatUtil.sendMessage(player, plugin.getLangFile().getMessages().getAnErrorOccurred());
@@ -240,10 +274,13 @@ public class BedrockFormManager {
                     }
 
                     if (result.isStatus()) {
-                        if (result.isEmailVerificationRequired() && plugin.getConfigFile().getSettings().getEmailVerification().isKickAfterRegister()) {
+                        if (result.isEmailVerificationRequired()
+                                && plugin.getConfigFile().getSettings().getEmailVerification().isKickAfterRegister()) {
                             player.kickPlayer(String.join("\n",
-                                    ChatUtil.replacePlaceholders(plugin.getLangFile().getMessages().getKickEmailNotVerified(),
-                                            new Placeholder("{prefix}", plugin.getLangFile().getMessages().getPrefix()))));
+                                    ChatUtil.replacePlaceholders(
+                                            plugin.getLangFile().getMessages().getKickEmailNotVerified(),
+                                            new Placeholder("{prefix}",
+                                                    plugin.getLangFile().getMessages().getPrefix()))));
                             return;
                         }
 
@@ -258,21 +295,26 @@ public class BedrockFormManager {
 
                         if (plugin.getConfigFile().getSettings().getSendAfterAuth().isEnabled()) {
                             plugin.getFoliaLib().getScheduler().runLater(() -> {
-                                plugin.sendPlayerToServer(player, plugin.getConfigFile().getSettings().getSendAfterAuth().getServer());
+                                plugin.sendPlayerToServer(player,
+                                        plugin.getConfigFile().getSettings().getSendAfterAuth().getServer());
                             }, 20L);
                         }
                     } else if (result.getError() == ErrorCode.USERNAME_ALREADY_EXIST) {
-                        ChatUtil.sendMessage(player, plugin.getLangFile().getMessages().getRegister().getAlreadyRegistered());
+                        ChatUtil.sendMessage(player,
+                                plugin.getLangFile().getMessages().getRegister().getAlreadyRegistered());
                     } else if (result.getError() == ErrorCode.REGISTER_LIMIT) {
-                        ChatUtil.sendMessage(player, plugin.getLangFile().getMessages().getRegister().getRegisterLimit());
+                        ChatUtil.sendMessage(player,
+                                plugin.getLangFile().getMessages().getRegister().getRegisterLimit());
                     } else if (result.getError() == ErrorCode.INVALID_USERNAME) {
                         ChatUtil.sendMessage(player, plugin.getLangFile().getMessages().getRegister().getInvalidName());
                     } else if (result.getError() == ErrorCode.INVALID_EMAIL) {
-                        ChatUtil.sendMessage(player, plugin.getLangFile().getMessages().getRegister().getInvalidEmail());
+                        ChatUtil.sendMessage(player,
+                                plugin.getLangFile().getMessages().getRegister().getInvalidEmail());
                     } else if (result.getError() == ErrorCode.EMAIL_ALREADY_EXIST) {
                         ChatUtil.sendMessage(player, plugin.getLangFile().getMessages().getRegister().getEmailInUse());
                     } else if (result.getError() == ErrorCode.INVALID_PASSWORD) {
-                        ChatUtil.sendMessage(player, plugin.getLangFile().getMessages().getRegister().getInvalidPassword());
+                        ChatUtil.sendMessage(player,
+                                plugin.getLangFile().getMessages().getRegister().getInvalidPassword());
                     } else {
                         Shared.getDebugAPI().send("Bedrock register error: " + result, true);
                         ChatUtil.sendMessage(player, plugin.getLangFile().getMessages().getAnErrorOccurred());
@@ -290,32 +332,41 @@ public class BedrockFormManager {
             FloodgateApi.getInstance().sendForm(player.getUniqueId(), form);
         } catch (Exception e) {
             releaseFormLock(player);
-            Shared.getDebugAPI().send("Failed to send register form to " + player.getName() + ": " + e.getMessage(), true);
+            Shared.getDebugAPI().send("Failed to send register form to " + player.getName() + ": " + e.getMessage(),
+                    true);
         }
     }
 
     public static void sendTfaForm(Player player) {
-        if (!acquireFormLock(player)) return;
+        if (!acquireFormLock(player))
+            return;
 
         Bukkit plugin = Bukkit.getInstance();
-        Language.Messages.BedrockForms.TfaForm formLang =
-                plugin.getLangFile().getMessages().getBedrockForms().getTfaForm();
+        Language.Messages.BedrockForms.TfaForm formLang = plugin.getLangFile().getMessages().getBedrockForms()
+                .getTfaForm();
 
         CustomForm form = CustomForm.builder()
                 .title(formLang.getTitle())
                 .label(formLang.getDescription())
                 .input(formLang.getCodeLabel())
-                .closedOrInvalidResultHandler(() -> releaseFormLock(player))
+                .closedOrInvalidResultHandler(() -> {
+                    releaseFormLock(player);
+                    resendFormLater(player);
+                })
                 .validResultHandler((response) -> {
                     releaseFormLock(player);
-                    if (!checkCooldown(player)) return;
-                    if (!player.isOnline()) return;
+                    if (!checkCooldown(player))
+                        return;
+                    if (!player.isOnline())
+                        return;
 
                     GameSessionResponse session = plugin.getSessions().get(player.getName());
-                    if (session == null || session.getState() != SessionState.TFA_REQUIRED) return;
+                    if (session == null || session.getState() != SessionState.TFA_REQUIRED)
+                        return;
 
                     String code = response.next();
-                    if (code == null || code.trim().isEmpty()) return;
+                    if (code == null || code.trim().isEmpty())
+                        return;
 
                     if (code.length() != 6 || !code.matches("\\d+")) {
                         ChatUtil.sendMessage(player, plugin.getLangFile().getMessages().getTfa().getInvalidCode());
@@ -325,7 +376,8 @@ public class BedrockFormManager {
 
                     AuthUtil.verifyTfa(code, session.getToken()).whenComplete((result, ex) -> {
                         plugin.getFoliaLib().getScheduler().runNextTick((task) -> {
-                            if (!player.isOnline()) return;
+                            if (!player.isOnline())
+                                return;
 
                             if (ex != null) {
                                 ChatUtil.sendMessage(player, plugin.getLangFile().getMessages().getAnErrorOccurred());
@@ -335,21 +387,26 @@ public class BedrockFormManager {
 
                             if (result.isStatus()) {
                                 ChatUtil.sendMessage(player, plugin.getLangFile().getMessages().getTfa().getSuccess());
-                                ChatUtil.sendConsoleInfo(player.getName() + " has completed TFA verification successfully.");
+                                ChatUtil.sendConsoleInfo(
+                                        player.getName() + " has completed TFA verification successfully.");
                                 plugin.forceAuthenticate(player);
 
                                 if (plugin.getConfigFile().getSettings().getSendAfterAuth().isEnabled()) {
                                     plugin.getFoliaLib().getScheduler().runLater(() -> {
-                                        plugin.sendPlayerToServer(player, plugin.getConfigFile().getSettings().getSendAfterAuth().getServer());
+                                        plugin.sendPlayerToServer(player,
+                                                plugin.getConfigFile().getSettings().getSendAfterAuth().getServer());
                                     }, 20L);
                                 }
                             } else if (result.getError() == ErrorCode.WRONG_CODE) {
-                                ChatUtil.sendMessage(player, plugin.getLangFile().getMessages().getTfa().getInvalidCode());
+                                ChatUtil.sendMessage(player,
+                                        plugin.getLangFile().getMessages().getTfa().getInvalidCode());
                                 resendFormLater(player);
                             } else if (result.getError() == ErrorCode.SESSION_NOT_FOUND) {
-                                ChatUtil.sendMessage(player, plugin.getLangFile().getMessages().getTfa().getSessionNotFound());
+                                ChatUtil.sendMessage(player,
+                                        plugin.getLangFile().getMessages().getTfa().getSessionNotFound());
                             } else if (result.getError() == ErrorCode.TFA_VERIFICATION_FAILED) {
-                                ChatUtil.sendMessage(player, plugin.getLangFile().getMessages().getTfa().getVerificationFailed());
+                                ChatUtil.sendMessage(player,
+                                        plugin.getLangFile().getMessages().getTfa().getVerificationFailed());
                                 resendFormLater(player);
                             } else {
                                 Shared.getDebugAPI().send("Bedrock TFA error: " + result, true);
@@ -372,7 +429,8 @@ public class BedrockFormManager {
     private static void resendFormLater(Player player) {
         Bukkit plugin = Bukkit.getInstance();
         plugin.getFoliaLib().getScheduler().runLater(() -> {
-            if (!player.isOnline() || plugin.isAuthenticated(player)) return;
+            if (!player.isOnline() || plugin.isAuthenticated(player))
+                return;
             sendAuthForm(player);
         }, 40L);
     }

@@ -31,6 +31,11 @@ public class AltAccountManager {
         if (ip == null || ip.isEmpty())
             return;
 
+        // Skip if alt logger is disabled
+        if (!plugin.getConfigFile().getSettings().getDatabase().isAltLoggerEnabled()) {
+            return;
+        }
+
         // Skip if player is exempt
         if (player.hasPermission("leaderos.auth.alt.exempt")) {
             return;

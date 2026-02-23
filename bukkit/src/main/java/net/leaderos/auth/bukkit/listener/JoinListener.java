@@ -54,6 +54,9 @@ public class JoinListener implements Listener {
 
             GameSessionResponse session = plugin.getSessions().get(player.getName());
 
+            // Clear any stale Bedrock form locks from previous server visit
+            BedrockFormManager.cleanup(player);
+
             if (session.isAuthenticated()) {
                 ChatUtil.sendMessage(player, plugin.getLangFile().getMessages().getLogin().getSuccess());
                 plugin.getAuthMeCompatBridge().callLogin(player);

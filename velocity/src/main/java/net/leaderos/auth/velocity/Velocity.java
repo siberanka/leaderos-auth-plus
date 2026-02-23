@@ -35,6 +35,10 @@ import net.leaderos.auth.velocity.listener.ConnectionListener;
 import net.leaderos.auth.shared.Shared;
 import net.leaderos.auth.shared.helpers.UrlUtil;
 import net.leaderos.auth.velocity.listener.IpConnectionLimitListener;
+import net.leaderos.auth.velocity.database.Database;
+import net.leaderos.auth.velocity.database.Mysql;
+import net.leaderos.auth.velocity.database.Sqlite;
+import net.leaderos.auth.velocity.helpers.AltAccountManager;
 import org.bstats.velocity.Metrics;
 import org.slf4j.Logger;
 
@@ -47,15 +51,8 @@ import java.util.Collections;
  */
 @Getter
 @Setter
-@Plugin(
-        id = "leaderosauth",
-        name = "LeaderOS-Auth",
-        version = "1.0.5-fork",
-        url = "https://leaderos.net",
-        description = "LeaderOS Auth for Velocity",
-        authors = {"leaderos", "efekurbann", "siberanka"},
-        dependencies = {@Dependency(id = "limboapi")}
-)
+@Plugin(id = "leaderosauth", name = "LeaderOS-Auth", version = "1.0.5-fork", url = "https://leaderos.net", description = "LeaderOS Auth for Velocity", authors = {
+        "leaderos", "efekurbann", "siberanka" }, dependencies = { @Dependency(id = "limboapi") })
 public class Velocity {
 
     /**
@@ -98,6 +95,10 @@ public class Velocity {
     private LimboFactory factory;
     @Getter
     private Limbo limboServer;
+    @Getter
+    private Database database;
+    @Getter
+    private AltAccountManager altAccountManager;
 
     /**
      * Constructor of main class
@@ -109,7 +110,7 @@ public class Velocity {
      */
     @Inject
     public Velocity(ProxyServer server, Logger logger, @DataDirectory Path dataDirectory,
-                    Metrics.Factory metricsFactory) {
+            Metrics.Factory metricsFactory) {
         instance = this;
         this.server = server;
         this.logger = logger;
@@ -155,6 +156,46 @@ public class Velocity {
 
         this.server.getEventManager().register(this, new ConnectionListener(this));
         this.server.getEventManager().register(this, new IpConnectionLimitListener(this));
+
+        // Initialize database for alt account tracking
+        setupDatabase();
+    }
+
+    private void setupDatabase() {
+        Config.Settings.Database dbConfig = configFile.getSettings().getDatabase();
+        if (!dbConfig.isAltLoggerEnabled()) {
+            logger.info("Alt account logger is disabled.");
+            return;
+        }
+
+        String type = dbConfig.getType().toUpperCase();
+        if (type.equals("MYSQL")) {
+            this.database = new Mysql(logger, dbConfig.isDebug(), dbConfig.getPrefix(),
+                    dbConfig.getMysqlHostname(), Integer.parseInt(dbConfig.getMysqlPort()),
+                    dbConfig.getMysqlDatabase(), dbConfig.getMysqlUsername(),
+                    dbConfig.getMysqlPassword(), dbConfig.getJdbcurlProperties());
+        } else {
+            this.database = new Sqlite(logger, dbConfig.isDebug(), dbConfig.getPrefix(),
+                    dataDirectory.toFile());
+        }
+
+        if (!this.database.initialize()) {
+            logger.error("Failed to initialize database for alt account tracking!");
+            this.database = null;
+            return;
+        }
+
+        this.altAccountManager = new AltAccountManager(this);
+        logger.info("Alt account tracking initialized with " + type + " database.");
+
+        // Auto-purge old records
+        int expiration = dbConfig.getExpirationTime();
+        if (expiration > 0) {
+            int purged = this.database.purge(expiration);
+            if (purged > 0) {
+                logger.info("Purged " + purged + " old alt records (older than " + expiration + " days).");
+            }
+        }
     }
 
     /**
@@ -164,7 +205,9 @@ public class Velocity {
      */
     @Subscribe
     public void onProxyShutdown(ProxyShutdownEvent event) {
-
+        if (database != null) {
+            database.closeDataSource();
+        }
     }
 
     /**
@@ -172,23 +215,47 @@ public class Velocity {
      */
     public void setupFiles() {
         try {
-            this.configFile = ConfigManager.create(Config.class, (it) -> {
-                it.withConfigurer(new YamlSnakeYamlConfigurer());
-                it.withBindFile(new File(getDataDirectory().toFile().getAbsolutePath(), "config.yml"));
-                it.saveDefaults();
-                it.load(true);
-            });
+            File configYml = new File(getDataDirectory().toFile().getAbsolutePath(), "config.yml");
+            this.configFile = loadConfigWithRecovery(Config.class, configYml);
+            this.configFile.save();
+
             String langName = configFile.getSettings().getLang();
             Class langClass = Class.forName("net.leaderos.auth.velocity.configuration.lang." + langName);
+            @SuppressWarnings("unchecked")
             Class<Language> languageClass = langClass;
-            this.langFile = ConfigManager.create(languageClass, (it) -> {
+            File langYml = new File(getDataDirectory().toFile().getAbsolutePath() + "/lang", langName + ".yml");
+            this.langFile = loadConfigWithRecovery(languageClass, langYml);
+            this.langFile.save();
+        } catch (Exception exception) {
+            getLogger().error("Failed to load config/language files!", exception);
+        }
+    }
+
+    private <T extends eu.okaeri.configs.OkaeriConfig> T loadConfigWithRecovery(Class<T> configClass, File file) {
+        try {
+            return ConfigManager.create(configClass, (it) -> {
                 it.withConfigurer(new YamlSnakeYamlConfigurer());
-                it.withBindFile(new File(getDataDirectory().toFile().getAbsolutePath() + "/lang", langName + ".yml"));
+                it.withBindFile(file);
+                it.withRemoveOrphans(true);
                 it.saveDefaults();
                 it.load(true);
             });
-        } catch (Exception exception) {
-            getLogger().error("ErrorCode loading config.yml", exception);
+        } catch (Exception e) {
+            if (file.exists()) {
+                File broken = new File(file.getParent(), file.getName().replace(".yml", ".broken.yml"));
+                if (broken.exists())
+                    broken.delete();
+                file.renameTo(broken);
+                getLogger().warn("Config file " + file.getName() + " was corrupted! Backed up to " + broken.getName()
+                        + " and recreated with defaults.");
+            }
+            return ConfigManager.create(configClass, (it) -> {
+                it.withConfigurer(new YamlSnakeYamlConfigurer());
+                it.withBindFile(file);
+                it.withRemoveOrphans(true);
+                it.saveDefaults();
+                it.load(true);
+            });
         }
     }
 
@@ -207,8 +274,7 @@ public class Velocity {
                         configFile.getSettings().getCustomWorld().getSpawnLocation().getY(),
                         configFile.getSettings().getCustomWorld().getSpawnLocation().getZ(),
                         (float) configFile.getSettings().getCustomWorld().getSpawnLocation().getYaw(),
-                        (float) configFile.getSettings().getCustomWorld().getSpawnLocation().getPitch()
-                );
+                        (float) configFile.getSettings().getCustomWorld().getSpawnLocation().getPitch());
                 Path path = this.dataDirectory.resolve(configFile.getSettings().getCustomWorld().getFile());
                 WorldFile file = this.factory.openWorldFile(BuiltInWorldFileType.WORLDEDIT_SCHEM, path);
                 file.toWorld(this.factory, world, 0, 0, 0, configFile.getSettings().getCustomWorld().getLightLevel());
@@ -224,7 +290,6 @@ public class Velocity {
                 .setName("LeaderOS-Auth")
                 .setWorldTime(worldTime)
                 .setGameMode(GameMode.ADVENTURE);
-
 
         for (String command : this.configFile.getSettings().getLoginCommands()) {
             limboServer.registerCommand(new LimboCommandMeta(Collections.singleton(command)));
@@ -246,11 +311,11 @@ public class Velocity {
                 if (updater.checkForUpdates()) {
                     Component msg = ChatUtil.replacePlaceholders(
                             Velocity.getInstance().getLangFile().getMessages().getUpdate(),
-                            new Placeholder("%version%", updater.getLatestVersion())
-                    );
+                            new Placeholder("%version%", updater.getLatestVersion()));
                     ChatUtil.sendMessage(getServer().getConsoleCommandSource(), msg);
                 }
-            } catch (Exception ignored) {}
+            } catch (Exception ignored) {
+            }
         }).schedule();
     }
 }

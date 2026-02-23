@@ -174,25 +174,49 @@ public class Bukkit extends JavaPlugin {
 
     public void setupFiles() {
         try {
-            this.configFile = ConfigManager.create(Config.class, (it) -> {
-                it.withConfigurer(new YamlBukkitConfigurer());
-                it.withBindFile(new File(this.getDataFolder().getAbsolutePath(), "config.yml"));
-                it.withRemoveOrphans(true);
-                it.saveDefaults();
-                it.load(true);
-            });
+            File configYml = new File(this.getDataFolder().getAbsolutePath(), "config.yml");
+            this.configFile = loadConfigWithRecovery(Config.class, configYml);
+            this.configFile.save();
+
             String langName = configFile.getSettings().getLang();
             Class langClass = Class.forName("net.leaderos.auth.bukkit.configuration.lang." + langName);
+            @SuppressWarnings("unchecked")
             Class<Language> languageClass = langClass;
-            this.langFile = ConfigManager.create(languageClass, (it) -> {
+            File langYml = new File(this.getDataFolder().getAbsolutePath() + "/lang", langName + ".yml");
+            this.langFile = loadConfigWithRecovery(languageClass, langYml);
+            this.langFile.save();
+        } catch (Exception exception) {
+            getLogger().log(Level.SEVERE, "Failed to load config/language files!", exception);
+        }
+    }
+
+    private <T extends eu.okaeri.configs.OkaeriConfig> T loadConfigWithRecovery(Class<T> configClass, File file) {
+        try {
+            return ConfigManager.create(configClass, (it) -> {
                 it.withConfigurer(new YamlBukkitConfigurer());
-                it.withBindFile(new File(this.getDataFolder().getAbsolutePath() + "/lang", langName + ".yml"));
+                it.withBindFile(file);
                 it.withRemoveOrphans(true);
                 it.saveDefaults();
                 it.load(true);
             });
-        } catch (Exception exception) {
-            getLogger().log(Level.WARNING, "ErrorCode loading config.yml", exception);
+        } catch (Exception e) {
+            if (file.exists()) {
+                // Backup the broken file and recreate from defaults
+                File broken = new File(file.getParent(), file.getName().replace(".yml", ".broken.yml"));
+                if (broken.exists())
+                    broken.delete();
+                file.renameTo(broken);
+                getLogger().warning("Config file " + file.getName() + " was corrupted! Backed up to " + broken.getName()
+                        + " and recreated with defaults.");
+            }
+            // Create fresh from defaults
+            return ConfigManager.create(configClass, (it) -> {
+                it.withConfigurer(new YamlBukkitConfigurer());
+                it.withBindFile(file);
+                it.withRemoveOrphans(true);
+                it.saveDefaults();
+                it.load(true);
+            });
         }
     }
 

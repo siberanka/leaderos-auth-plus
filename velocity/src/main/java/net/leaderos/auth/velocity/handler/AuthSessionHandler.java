@@ -51,7 +51,8 @@ public class AuthSessionHandler implements LimboSessionHandler {
         if (session == null) {
             Shared.getDebugAPI().send("Session response is null for player " + proxyPlayer.getUsername(), true);
             proxyPlayer.disconnect(Component.join(JoinConfiguration.newlines(),
-                    ChatUtil.replacePlaceholders(plugin.getLangFile().getMessages().getKickAnError(), new Placeholder("{prefix}", plugin.getLangFile().getMessages().getPrefix()))));
+                    ChatUtil.replacePlaceholders(plugin.getLangFile().getMessages().getKickAnError(),
+                            new Placeholder("{prefix}", plugin.getLangFile().getMessages().getPrefix()))));
             return;
         }
 
@@ -59,54 +60,54 @@ public class AuthSessionHandler implements LimboSessionHandler {
             ChatUtil.sendMessage(proxyPlayer, plugin.getLangFile().getMessages().getLogin().getMessage());
 
             if (plugin.getConfigFile().getSettings().isShowTitle()) {
-                proxyPlayer.showTitle(Title.title(ChatUtil.color(plugin.getLangFile().getMessages().getLogin().getTitle()),
-                        ChatUtil.color(plugin.getLangFile().getMessages().getLogin().getSubtitle()),
-                        Title.Times.times(
-                                Duration.ZERO,
-                                Duration.ofSeconds(plugin.getConfigFile().getSettings().getAuthTimeout()),
-                                Duration.ZERO
-                        ))
-                );
+                proxyPlayer
+                        .showTitle(Title.title(ChatUtil.color(plugin.getLangFile().getMessages().getLogin().getTitle()),
+                                ChatUtil.color(plugin.getLangFile().getMessages().getLogin().getSubtitle()),
+                                Title.Times.times(
+                                        Duration.ZERO,
+                                        Duration.ofSeconds(plugin.getConfigFile().getSettings().getAuthTimeout()),
+                                        Duration.ZERO)));
             }
         }
         if (session.getState() == SessionState.REGISTER_REQUIRED) {
             ChatUtil.sendMessage(proxyPlayer, plugin.getLangFile().getMessages().getRegister().getMessage());
 
             if (plugin.getConfigFile().getSettings().isShowTitle()) {
-                proxyPlayer.showTitle(Title.title(ChatUtil.color(plugin.getLangFile().getMessages().getRegister().getTitle()),
-                        ChatUtil.color(plugin.getLangFile().getMessages().getRegister().getSubtitle()),
-                        Title.Times.times(
-                                Duration.ZERO,
-                                Duration.ofSeconds(plugin.getConfigFile().getSettings().getAuthTimeout()),
-                                Duration.ZERO
-                        ))
-                );
+                proxyPlayer.showTitle(
+                        Title.title(ChatUtil.color(plugin.getLangFile().getMessages().getRegister().getTitle()),
+                                ChatUtil.color(plugin.getLangFile().getMessages().getRegister().getSubtitle()),
+                                Title.Times.times(
+                                        Duration.ZERO,
+                                        Duration.ofSeconds(plugin.getConfigFile().getSettings().getAuthTimeout()),
+                                        Duration.ZERO)));
             }
         }
         if (session.getState() == SessionState.TFA_REQUIRED) {
             ChatUtil.sendMessage(proxyPlayer, plugin.getLangFile().getMessages().getTfa().getRequired());
 
             if (plugin.getConfigFile().getSettings().isShowTitle()) {
-                proxyPlayer.showTitle(Title.title(ChatUtil.color(plugin.getLangFile().getMessages().getTfa().getTitle()),
-                        ChatUtil.color(plugin.getLangFile().getMessages().getTfa().getSubtitle()),
-                        Title.Times.times(
-                                Duration.ZERO,
-                                Duration.ofSeconds(plugin.getConfigFile().getSettings().getAuthTimeout()),
-                                Duration.ZERO
-                        ))
-                );
+                proxyPlayer
+                        .showTitle(Title.title(ChatUtil.color(plugin.getLangFile().getMessages().getTfa().getTitle()),
+                                ChatUtil.color(plugin.getLangFile().getMessages().getTfa().getSubtitle()),
+                                Title.Times.times(
+                                        Duration.ZERO,
+                                        Duration.ofSeconds(plugin.getConfigFile().getSettings().getAuthTimeout()),
+                                        Duration.ZERO)));
             }
         }
 
         AtomicInteger i = new AtomicInteger();
         this.authMainTask = this.limboPlayer.getScheduledExecutor().scheduleWithFixedDelay(() -> {
-            if (System.currentTimeMillis() - this.joinTime > plugin.getConfigFile().getSettings().getAuthTimeout() * 1000L) {
+            if (System.currentTimeMillis() - this.joinTime > plugin.getConfigFile().getSettings().getAuthTimeout()
+                    * 1000L) {
                 proxyPlayer.disconnect(Component.join(JoinConfiguration.newlines(),
-                        ChatUtil.replacePlaceholders(plugin.getLangFile().getMessages().getKickTimeout(), new Placeholder("{prefix}", plugin.getLangFile().getMessages().getPrefix()))));
+                        ChatUtil.replacePlaceholders(plugin.getLangFile().getMessages().getKickTimeout(),
+                                new Placeholder("{prefix}", plugin.getLangFile().getMessages().getPrefix()))));
                 return;
             }
 
-            // We'll send a message every 5 seconds to remind the player to login or register
+            // We'll send a message every 5 seconds to remind the player to login or
+            // register
             if (i.incrementAndGet() % 5 == 0) {
                 if (session.getState() == SessionState.LOGIN_REQUIRED) {
                     ChatUtil.sendMessage(proxyPlayer, plugin.getLangFile().getMessages().getLogin().getMessage());
@@ -121,19 +122,24 @@ public class AuthSessionHandler implements LimboSessionHandler {
 
             // Update boss bar progress
             if (plugin.getConfigFile().getSettings().getBossBar().isEnabled()) {
-                int remainingSeconds = (int) ((plugin.getConfigFile().getSettings().getAuthTimeout() * 1000L - (System.currentTimeMillis() - this.joinTime)) / 1000L);
-                float progress = 1.0f - ((System.currentTimeMillis() - this.joinTime) / (float)(plugin.getConfigFile().getSettings().getAuthTimeout() * 1000L));
+                int remainingSeconds = (int) ((plugin.getConfigFile().getSettings().getAuthTimeout() * 1000L
+                        - (System.currentTimeMillis() - this.joinTime)) / 1000L);
+                float progress = 1.0f - ((System.currentTimeMillis() - this.joinTime)
+                        / (float) (plugin.getConfigFile().getSettings().getAuthTimeout() * 1000L));
                 float barProgress = (Math.max(0f, Math.min(1f, progress)));
 
                 String barTitle = "";
                 if (session.getState() == SessionState.LOGIN_REQUIRED) {
-                    barTitle = plugin.getLangFile().getMessages().getLogin().getBossBar().replace("{seconds}", String.valueOf(remainingSeconds));
+                    barTitle = plugin.getLangFile().getMessages().getLogin().getBossBar().replace("{seconds}",
+                            String.valueOf(remainingSeconds));
                 }
                 if (session.getState() == SessionState.REGISTER_REQUIRED) {
-                    barTitle = plugin.getLangFile().getMessages().getRegister().getBossBar().replace("{seconds}", String.valueOf(remainingSeconds));
+                    barTitle = plugin.getLangFile().getMessages().getRegister().getBossBar().replace("{seconds}",
+                            String.valueOf(remainingSeconds));
                 }
                 if (session.getState() == SessionState.TFA_REQUIRED) {
-                    barTitle = plugin.getLangFile().getMessages().getTfa().getBossBar().replace("{seconds}", String.valueOf(remainingSeconds));
+                    barTitle = plugin.getLangFile().getMessages().getTfa().getBossBar().replace("{seconds}",
+                            String.valueOf(remainingSeconds));
                 }
 
                 // Set bar color to auto if enabled
@@ -155,8 +161,7 @@ public class AuthSessionHandler implements LimboSessionHandler {
                             ChatUtil.color(barTitle),
                             barProgress,
                             barColor,
-                            plugin.getConfigFile().getSettings().getBossBar().getStyle()
-                    );
+                            plugin.getConfigFile().getSettings().getBossBar().getStyle());
                 } else {
                     bossBar.name(ChatUtil.color(barTitle));
                     bossBar.progress(barProgress);
@@ -171,9 +176,11 @@ public class AuthSessionHandler implements LimboSessionHandler {
 
     @Override
     public void onChat(String message) {
-        if (!message.startsWith("/")) return;
+        if (!message.startsWith("/"))
+            return;
 
-        if (lastCommand > 0 && System.currentTimeMillis() - lastCommand < (plugin.getConfigFile().getSettings().getCommandCooldown() * 1000L)) {
+        if (lastCommand > 0 && System.currentTimeMillis()
+                - lastCommand < (plugin.getConfigFile().getSettings().getCommandCooldown() * 1000L)) {
             ChatUtil.sendMessage(proxyPlayer, plugin.getLangFile().getMessages().getWait());
             return;
         }
@@ -182,7 +189,8 @@ public class AuthSessionHandler implements LimboSessionHandler {
 
         String[] args = message.split(" ");
         String command = args[0].startsWith("/") ? args[0].toLowerCase().substring(1) : args[0].toLowerCase();
-        if (plugin.getConfigFile().getSettings().getLoginCommands().contains(command) && args.length > 1) { // Login command
+        if (plugin.getConfigFile().getSettings().getLoginCommands().contains(command) && args.length > 1) { // Login
+                                                                                                            // command
             // Prevent trying to login if already authenticated
             if (session.getState() == SessionState.AUTHENTICATED) {
                 ChatUtil.sendMessage(proxyPlayer, plugin.getLangFile().getMessages().getAlreadyAuthenticated());
@@ -223,14 +231,13 @@ public class AuthSessionHandler implements LimboSessionHandler {
 
                         // Update title to TFA
                         if (plugin.getConfigFile().getSettings().isShowTitle()) {
-                            proxyPlayer.showTitle(Title.title(ChatUtil.color(plugin.getLangFile().getMessages().getTfa().getTitle()),
+                            proxyPlayer.showTitle(Title.title(
+                                    ChatUtil.color(plugin.getLangFile().getMessages().getTfa().getTitle()),
                                     ChatUtil.color(plugin.getLangFile().getMessages().getTfa().getSubtitle()),
                                     Title.Times.times(
                                             Duration.ZERO,
                                             Duration.ofSeconds(plugin.getConfigFile().getSettings().getAuthTimeout()),
-                                            Duration.ZERO
-                                    ))
-                            );
+                                            Duration.ZERO)));
                         }
 
                         ChatUtil.sendMessage(proxyPlayer, plugin.getLangFile().getMessages().getTfa().getRequired());
@@ -241,24 +248,35 @@ public class AuthSessionHandler implements LimboSessionHandler {
 
                         ChatUtil.sendMessage(proxyPlayer, plugin.getLangFile().getMessages().getLogin().getSuccess());
                         ChatUtil.sendConsoleInfo(proxyPlayer.getUsername() + " has logged in successfully.");
-                        this.limboPlayer.getScheduledExecutor().schedule(() -> this.limboPlayer.disconnect(), 500, TimeUnit.MILLISECONDS);
+
+                        // Alt account tracking
+                        if (plugin.getAltAccountManager() != null) {
+                            plugin.getAltAccountManager().processPlayerRecord(proxyPlayer, ip);
+                        }
+
+                        this.limboPlayer.getScheduledExecutor().schedule(() -> this.limboPlayer.disconnect(), 500,
+                                TimeUnit.MILLISECONDS);
                     }
                 } else if (result.getError() == ErrorCode.USER_NOT_FOUND) {
-                    ChatUtil.sendMessage(proxyPlayer, plugin.getLangFile().getMessages().getLogin().getAccountNotFound());
+                    ChatUtil.sendMessage(proxyPlayer,
+                            plugin.getLangFile().getMessages().getLogin().getAccountNotFound());
                 } else if (result.getError() == ErrorCode.WRONG_PASSWORD) {
                     if (plugin.getConfigFile().getSettings().isKickOnWrongPassword()) {
                         proxyPlayer.disconnect(Component.join(JoinConfiguration.newlines(),
-                                ChatUtil.replacePlaceholders(plugin.getLangFile().getMessages().getKickWrongPassword(), new Placeholder("{prefix}", plugin.getLangFile().getMessages().getPrefix()))));
+                                ChatUtil.replacePlaceholders(plugin.getLangFile().getMessages().getKickWrongPassword(),
+                                        new Placeholder("{prefix}", plugin.getLangFile().getMessages().getPrefix()))));
                         return;
                     }
 
-                    ChatUtil.sendMessage(proxyPlayer, plugin.getLangFile().getMessages().getLogin().getIncorrectPassword());
+                    ChatUtil.sendMessage(proxyPlayer,
+                            plugin.getLangFile().getMessages().getLogin().getIncorrectPassword());
                 } else {
                     Shared.getDebugAPI().send("An unexpected error occurred during login: " + result, true);
                     ChatUtil.sendMessage(proxyPlayer, plugin.getLangFile().getMessages().getAnErrorOccurred());
                 }
             });
-        } else if (plugin.getConfigFile().getSettings().getRegisterCommands().contains(command) && args.length > 2) { // Register command
+        } else if (plugin.getConfigFile().getSettings().getRegisterCommands().contains(command) && args.length > 2) { // Register
+                                                                                                                      // command
             // Prevent trying to register if already authenticated
             if (session.getState() == SessionState.AUTHENTICATED) {
                 ChatUtil.sendMessage(proxyPlayer, plugin.getLangFile().getMessages().getAlreadyAuthenticated());
@@ -284,7 +302,8 @@ public class AuthSessionHandler implements LimboSessionHandler {
 
             // Check if second arg is confirmation and if it matches
             if (secondArgType == RegisterSecondArg.PASSWORD_CONFIRM && !password.equals(secondArg)) {
-                ChatUtil.sendMessage(proxyPlayer, plugin.getLangFile().getMessages().getRegister().getPasswordMismatch());
+                ChatUtil.sendMessage(proxyPlayer,
+                        plugin.getLangFile().getMessages().getRegister().getPasswordMismatch());
                 return;
             }
 
@@ -296,15 +315,19 @@ public class AuthSessionHandler implements LimboSessionHandler {
 
             int minPasswordLength = Math.max(plugin.getConfigFile().getSettings().getMinPasswordLength(), 4);
             if (password.length() < minPasswordLength) {
-                ChatUtil.sendMessage(proxyPlayer, ChatUtil.replacePlaceholders(plugin.getLangFile().getMessages().getRegister().getPasswordTooShort(),
-                        new Placeholder("{min}", minPasswordLength + "")));
+                ChatUtil.sendMessage(proxyPlayer,
+                        ChatUtil.replacePlaceholders(
+                                plugin.getLangFile().getMessages().getRegister().getPasswordTooShort(),
+                                new Placeholder("{min}", minPasswordLength + "")));
                 return;
             }
 
             int maxPasswordLength = 32;
             if (password.length() > maxPasswordLength) {
-                ChatUtil.sendMessage(proxyPlayer, ChatUtil.replacePlaceholders(plugin.getLangFile().getMessages().getRegister().getPasswordTooLong(),
-                        new Placeholder("{max}", maxPasswordLength + "")));
+                ChatUtil.sendMessage(proxyPlayer,
+                        ChatUtil.replacePlaceholders(
+                                plugin.getLangFile().getMessages().getRegister().getPasswordTooLong(),
+                                new Placeholder("{max}", maxPasswordLength + "")));
                 return;
             }
 
@@ -325,9 +348,12 @@ public class AuthSessionHandler implements LimboSessionHandler {
 
                 if (result.isStatus()) {
                     // Kick the player if email verification is required
-                    if (result.isEmailVerificationRequired() && plugin.getConfigFile().getSettings().getEmailVerification().isKickAfterRegister()) {
+                    if (result.isEmailVerificationRequired()
+                            && plugin.getConfigFile().getSettings().getEmailVerification().isKickAfterRegister()) {
                         proxyPlayer.disconnect(Component.join(JoinConfiguration.newlines(),
-                                ChatUtil.replacePlaceholders(plugin.getLangFile().getMessages().getKickEmailNotVerified(), new Placeholder("{prefix}", plugin.getLangFile().getMessages().getPrefix()))));
+                                ChatUtil.replacePlaceholders(
+                                        plugin.getLangFile().getMessages().getKickEmailNotVerified(),
+                                        new Placeholder("{prefix}", plugin.getLangFile().getMessages().getPrefix()))));
                         return;
                     }
 
@@ -339,25 +365,39 @@ public class AuthSessionHandler implements LimboSessionHandler {
 
                     ChatUtil.sendMessage(proxyPlayer, plugin.getLangFile().getMessages().getRegister().getSuccess());
                     ChatUtil.sendConsoleInfo(proxyPlayer.getUsername() + " has registered successfully.");
-                    this.limboPlayer.getScheduledExecutor().schedule(() -> this.limboPlayer.disconnect(), 500, TimeUnit.MILLISECONDS);
+
+                    // Alt account tracking
+                    if (plugin.getAltAccountManager() != null) {
+                        plugin.getAltAccountManager().processPlayerRecord(proxyPlayer, ip);
+                        plugin.getAltAccountManager().incrementRegistration(ip);
+                    }
+
+                    this.limboPlayer.getScheduledExecutor().schedule(() -> this.limboPlayer.disconnect(), 500,
+                            TimeUnit.MILLISECONDS);
                 } else if (result.getError() == ErrorCode.USERNAME_ALREADY_EXIST) {
-                    ChatUtil.sendMessage(proxyPlayer, plugin.getLangFile().getMessages().getRegister().getAlreadyRegistered());
+                    ChatUtil.sendMessage(proxyPlayer,
+                            plugin.getLangFile().getMessages().getRegister().getAlreadyRegistered());
                 } else if (result.getError() == ErrorCode.REGISTER_LIMIT) {
-                    ChatUtil.sendMessage(proxyPlayer, plugin.getLangFile().getMessages().getRegister().getRegisterLimit());
+                    ChatUtil.sendMessage(proxyPlayer,
+                            plugin.getLangFile().getMessages().getRegister().getRegisterLimit());
                 } else if (result.getError() == ErrorCode.INVALID_USERNAME) {
-                    ChatUtil.sendMessage(proxyPlayer, plugin.getLangFile().getMessages().getRegister().getInvalidName());
+                    ChatUtil.sendMessage(proxyPlayer,
+                            plugin.getLangFile().getMessages().getRegister().getInvalidName());
                 } else if (result.getError() == ErrorCode.INVALID_EMAIL) {
-                    ChatUtil.sendMessage(proxyPlayer, plugin.getLangFile().getMessages().getRegister().getInvalidEmail());
+                    ChatUtil.sendMessage(proxyPlayer,
+                            plugin.getLangFile().getMessages().getRegister().getInvalidEmail());
                 } else if (result.getError() == ErrorCode.EMAIL_ALREADY_EXIST) {
                     ChatUtil.sendMessage(proxyPlayer, plugin.getLangFile().getMessages().getRegister().getEmailInUse());
                 } else if (result.getError() == ErrorCode.INVALID_PASSWORD) {
-                    ChatUtil.sendMessage(proxyPlayer, plugin.getLangFile().getMessages().getRegister().getInvalidPassword());
+                    ChatUtil.sendMessage(proxyPlayer,
+                            plugin.getLangFile().getMessages().getRegister().getInvalidPassword());
                 } else {
                     Shared.getDebugAPI().send("An unexpected error occurred during register: " + result, true);
                     ChatUtil.sendMessage(proxyPlayer, plugin.getLangFile().getMessages().getAnErrorOccurred());
                 }
             });
-        } else if (plugin.getConfigFile().getSettings().getTfaCommands().contains(command) && args.length > 1) { // TFA command
+        } else if (plugin.getConfigFile().getSettings().getTfaCommands().contains(command) && args.length > 1) { // TFA
+                                                                                                                 // command
             String code = args[1];
 
             // Prevent trying to verify TFA if already authenticated
@@ -390,16 +430,24 @@ public class AuthSessionHandler implements LimboSessionHandler {
                     session.setState(SessionState.AUTHENTICATED);
 
                     ChatUtil.sendMessage(proxyPlayer, plugin.getLangFile().getMessages().getTfa().getSuccess());
-                    ChatUtil.sendConsoleInfo(proxyPlayer.getUsername() + " has completed TFA verification successfully.");
+                    ChatUtil.sendConsoleInfo(
+                            proxyPlayer.getUsername() + " has completed TFA verification successfully.");
+
+                    // Alt account tracking
+                    if (plugin.getAltAccountManager() != null) {
+                        plugin.getAltAccountManager().processPlayerRecord(proxyPlayer, ip);
+                    }
 
                     // Disconnect player to allow reconnection with valid session
-                    this.limboPlayer.getScheduledExecutor().schedule(() -> this.limboPlayer.disconnect(), 500, TimeUnit.MILLISECONDS);
+                    this.limboPlayer.getScheduledExecutor().schedule(() -> this.limboPlayer.disconnect(), 500,
+                            TimeUnit.MILLISECONDS);
                 } else if (result.getError() == ErrorCode.WRONG_CODE) {
                     ChatUtil.sendMessage(proxyPlayer, plugin.getLangFile().getMessages().getTfa().getInvalidCode());
                 } else if (result.getError() == ErrorCode.SESSION_NOT_FOUND) {
                     ChatUtil.sendMessage(proxyPlayer, plugin.getLangFile().getMessages().getTfa().getSessionNotFound());
                 } else if (result.getError() == ErrorCode.TFA_VERIFICATION_FAILED) {
-                    ChatUtil.sendMessage(proxyPlayer, plugin.getLangFile().getMessages().getTfa().getVerificationFailed());
+                    ChatUtil.sendMessage(proxyPlayer,
+                            plugin.getLangFile().getMessages().getTfa().getVerificationFailed());
                 } else {
                     Shared.getDebugAPI().send("An unexpected error occurred during TFA verification: " + result, true);
                     ChatUtil.sendMessage(proxyPlayer, plugin.getLangFile().getMessages().getAnErrorOccurred());

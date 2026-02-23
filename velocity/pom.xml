@@ -24,6 +24,11 @@
             <id>elytrium-repo</id>
             <url>https://maven.elytrium.net/repo/</url>
         </repository>
+        <!-- OpenCollab (Floodgate) -->
+        <repository>
+            <id>opencollab-releases</id>
+            <url>https://repo.opencollab.dev/main/</url>
+        </repository>
     </repositories>
 
     <dependencies>
@@ -64,6 +69,20 @@
             <groupId>net.elytrium.limboapi</groupId>
             <artifactId>api</artifactId>
             <version>1.1.27</version>
+            <scope>provided</scope>
+        </dependency>
+        <!-- HikariCP for database connection pooling -->
+        <dependency>
+            <groupId>com.zaxxer</groupId>
+            <artifactId>HikariCP</artifactId>
+            <version>4.0.3</version>
+            <scope>compile</scope>
+        </dependency>
+        <!-- Floodgate API (Bedrock) -->
+        <dependency>
+            <groupId>org.geysermc.floodgate</groupId>
+            <artifactId>api</artifactId>
+            <version>2.2.3-SNAPSHOT</version>
             <scope>provided</scope>
         </dependency>
         <!--<dependency>

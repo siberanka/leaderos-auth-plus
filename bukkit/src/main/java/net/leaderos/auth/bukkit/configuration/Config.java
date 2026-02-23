@@ -256,6 +256,9 @@ public class Config extends OkaeriConfig {
                         @Comment("Table prefix for Database")
                         private String prefix = "leaderos_auth_";
 
+                        @Comment("Enable Alt Logger (alt account detection and notifications)")
+                        private boolean altLoggerEnabled = false;
+
                         @Comment("Enable debug mode for database statements?")
                         private boolean debug = false;
 
