@@ -174,26 +174,50 @@ public class Language extends OkaeriConfig {
         @Setter
         public static class Alt extends OkaeriConfig {
 
-            @Comment("Notification message sent to players with leaderos.auth.alt.notify permission")
-            private String notifyMessage = "{prefix} &b[AltDetector] {player} &emay be an alt of: &c{alts}";
+            @Comment("Prefix added before join alt alert messages")
+            private String joinPlayerPrefix = "&b[AltDetector] ";
 
-            @Comment("Format for each player name in the alt list")
-            private String playerListFormat = "{player}";
+            @Comment("Main join alert text. {player} = joining player name")
+            private String joinPlayer = "{player} şu oyuncunun yan hesabı olabilir: ";
 
-            @Comment("Separator between player names in the alt list")
-            private String playerListSeparator = ", ";
+            @Comment("Format for each listed player in join alert. {player} = alt player name")
+            private String joinPlayerList = "{player}";
 
-            private String cmdPlayerNotFound = "{prefix} &cPlayer {player} not found.";
+            @Comment("Separator between players in join alert list")
+            private String joinPlayerSeparator = ", ";
 
-            private String cmdNoAlts = "{prefix} &e{player} has no known alt accounts.";
+            @Comment("Main message for /alt command. {player} = queried player")
+            private String cmdPlayer = "&c{player}&6 şu oyuncunun yan hesabı olabilir: ";
 
-            private String cmdAltsList = "{prefix} &eAlt accounts for {player}: &c{alts}";
+            @Comment("Format for each player in /alt output. {player} = alt player name")
+            private String cmdPlayerList = "&c{player}";
 
-            private String cmdDeletedSingular = "{prefix} &a1 record removed for {player}.";
+            @Comment("Separator for /alt player list")
+            private String cmdPlayerSeparator = "&6, ";
 
-            private String cmdDeletedPlural = "{prefix} &a{amount} records removed for {player}.";
+            @Comment("Message shown when no alts are found for a player. {player} = player name")
+            private String cmdPlayerNoAlts = "&c{player}&6 bilinen bir yan hesabı yok";
 
-            private String cmdDeletedNotFound = "{prefix} &cNo records found to delete for {player}.";
+            @Comment("Generic message when no alts are found")
+            private String cmdNoAlts = "&6Yan hesap bulunamadı";
+
+            @Comment("Message when player cannot be found. {player} = input name")
+            private String cmdPlayerNotFound = "&4{player} bulunamadı";
+
+            @Comment("Message for invalid command arguments")
+            private String cmdParamError = "&4En fazla bir oyuncu belirtmelisiniz";
+
+            @Comment("Message shown when sender has no permission")
+            private String cmdNoPerm = "&4Bu komutu kullanma izniniz yok";
+
+            @Comment("Message for /alt delete when 1 record is removed. {amount} = count")
+            private String cmdDeletedSingular = "&6{amount} kayıt silindi";
+
+            @Comment("Message for /alt delete when multiple records are removed. {amount} = count")
+            private String cmdDeletedPlural = "&6{amount} kayıt silindi";
+
+            @Comment("Message for /alt delete when no records found. {player} = player name")
+            private String cmdDeletedNotFound = "&c{player} için silinecek kayıt bulunamadı";
         }
 
         @Getter

@@ -38,6 +38,14 @@
                             <pattern>com.zaxxer.hikari</pattern>
                             <shadedPattern>net.leaderos.auth.bukkit.hikari</shadedPattern>
                         </relocation>
+                        <relocation>
+                            <pattern>org.bstats</pattern>
+                            <shadedPattern>net.leaderos.auth.bukkit.bstats</shadedPattern>
+                        </relocation>
+                        <relocation>
+                            <pattern>com.tcoded.folialib</pattern>
+                            <shadedPattern>net.leaderos.auth.bukkit.folialib</shadedPattern>
+                        </relocation>
                     </relocations>
                 </configuration>
                 <executions>

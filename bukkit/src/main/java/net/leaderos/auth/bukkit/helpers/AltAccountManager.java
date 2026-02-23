@@ -2,7 +2,6 @@ package net.leaderos.auth.bukkit.helpers;
 
 import net.leaderos.auth.bukkit.Bukkit;
 import net.leaderos.auth.bukkit.configuration.Language;
-import net.leaderos.auth.shared.helpers.Placeholder;
 import org.bukkit.ChatColor;
 import org.bukkit.entity.Player;
 import org.bukkit.metadata.MetadataValue;
@@ -50,49 +49,40 @@ public class AltAccountManager {
                 Language.Messages.Alt altConfig = plugin.getLangFile().getMessages().getAlt();
 
                 // Format alt list using configurable format and separator
-                String listFormat = altConfig.getPlayerListFormat();
-                String separator = altConfig.getPlayerListSeparator();
+                String listFormat = altConfig.getJoinPlayerList();
+                String separator = altConfig.getJoinPlayerSeparator();
 
                 String formattedAlts = accounts.stream()
                         .map(acc -> listFormat.replace("{player}", acc))
                         .collect(Collectors.joining(separator));
 
+                // Build notification string: prefix + joinPlayer + formattedAlts
+                String notifyStr = altConfig.getJoinPlayerPrefix()
+                        + altConfig.getJoinPlayer().replace("{player}", name)
+                        + formattedAlts;
+
                 // Build content for Discord (clean, no color codes)
-                StringBuilder discordContent = new StringBuilder();
-                discordContent.append("IP Address: ").append(ip).append("\\n");
-                discordContent.append("Accounts: ").append(name).append(separator);
-                discordContent.append(String.join(separator, accounts));
+                String cleanNotify = ChatColor.stripColor(
+                        ChatColor.translateAlternateColorCodes('&', notifyStr));
 
                 // Fire Discord webhook
-                webhook.sendAltMessage(discordContent.toString(), player);
+                webhook.sendAltMessage(cleanNotify, player);
 
                 // Back to main thread for notifying online players
                 plugin.getServer().getScheduler().runTask(plugin, () -> {
+                    String coloredMsg = ChatColor.translateAlternateColorCodes('&', notifyStr);
+
+                    // Log to console
+                    plugin.getLogger().info(ChatColor.stripColor(coloredMsg));
+
                     // Notify online players with permission
-                    String notifyMsg = ChatUtil.replacePlaceholders(
-                            altConfig.getNotifyMessage(),
-                            new Placeholder("{player}", name),
-                            new Placeholder("{alts}", formattedAlts));
-                    String coloredMsg = ChatColor.translateAlternateColorCodes('&', notifyMsg);
-
-                    // Replace {prefix} placeholder
-                    String prefix = plugin.getLangFile().getMessages().getPrefix();
-                    coloredMsg = coloredMsg.replace("{prefix}",
-                            ChatColor.translateAlternateColorCodes('&', prefix));
-
                     for (Player p : plugin.getServer().getOnlinePlayers()) {
                         if (p.hasPermission("leaderos.auth.alt.notify")) {
-                            // Check vanish: only show if recipient has seevanished perm OR player is not
-                            // vanished
                             if (p.hasPermission("leaderos.auth.alt.notify.seevanished") || !isVanished(player, p)) {
                                 p.sendMessage(coloredMsg);
                             }
                         }
                     }
-
-                    // Also log to console
-                    String cleanMsg = ChatColor.stripColor(coloredMsg);
-                    plugin.getLogger().info(cleanMsg);
                 });
             }
         });
