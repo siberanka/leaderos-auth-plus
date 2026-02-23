@@ -42,38 +42,30 @@ public class tr extends Language {
 
         private List<String> kickTimeout = Lists.newArrayList(
                 "&cSüre dolduğu için sunucudan atıldınız.",
-                "&cDevam etmek için lütfen sunucuya tekrar bağlanın."
-        );
+                "&cDevam etmek için lütfen sunucuya tekrar bağlanın.");
 
         private List<String> kickAnError = Lists.newArrayList(
                 "&cGiriş sistemlerine şu anda erişilemiyor.",
-                "&cLütfen daha sonra tekrar deneyin."
-        );
+                "&cLütfen daha sonra tekrar deneyin.");
 
         private List<String> kickNotRegistered = Lists.newArrayList(
                 "&cSunucuda kayıtlı değilsiniz!",
-                "&cLütfen devam etmek için sitemizden kayıt olun."
-        );
+                "&cLütfen devam etmek için sitemizden kayıt olun.");
 
         private List<String> kickWrongPassword = Lists.newArrayList(
-                "&cHatalı şifre!"
-        );
+                "&cHatalı şifre!");
 
         private List<String> kickInvalidUsername = Lists.newArrayList(
-                "&cGeçersiz kullanıcı adı!"
-        );
+                "&cGeçersiz kullanıcı adı!");
 
         private List<String> kickUsernameCaseMismatch = Lists.newArrayList(
-                "&cLütfen &e{invalid} &cyerine doğru kullanıcı adınız olan &a{valid} &cile giriş yapın."
-        );
+                "&cLütfen &e{invalid} &cyerine doğru kullanıcı adınız olan &a{valid} &cile giriş yapın.");
 
         private List<String> kickEmailNotVerified = Lists.newArrayList(
-                "&cSunucumuzda oynayabilmek için lütfen email adresinizi websitemizden doğrulayınız."
-        );
+                "&cSunucumuzda oynayabilmek için lütfen email adresinizi websitemizden doğrulayınız.");
 
         private List<String> kickMaxConnectionsPerIP = Lists.newArrayList(
-                "&cBu IP adresinden sunucuya izin verilen maksimum bağlantı sayısına ulaşıldı."
-        );
+                "&cBu IP adresinden sunucuya izin verilen maksimum bağlantı sayısına ulaşıldı.");
 
         private String unknownAuthCommand = "{prefix} &cBilinmeyen komut! Lütfen &a/register <şifre> <şifre> &aveya &a/login <şifre> &ckomutlarını kullanın.";
 
@@ -210,6 +202,20 @@ public class tr extends Language {
             private String verificationFailed = "{prefix} &cTFA doğrulaması başarısız! Lütfen tekrar deneyin.";
 
             private String success = "{prefix} &aİki faktörlü kimlik doğrulama başarılı!";
+
+        }
+
+        @Getter
+        @Setter
+        public static class Discord extends Language.Messages.Discord {
+
+            private String username = "{player} - Yan Hesap Bulundu";
+
+            private String mcServerName = "TwiLight Network";
+
+            private String embedTitle = "Yan Hesaplar Bulundu - {player}";
+
+            private String embedDescription = "`{content}`";
 
         }
 

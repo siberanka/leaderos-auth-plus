@@ -88,8 +88,7 @@ public class LoginCommand extends BaseCommand {
                                         ChatUtil.color(plugin.getLangFile().getMessages().getTfa().getTitle()),
                                         ChatUtil.color(plugin.getLangFile().getMessages().getTfa().getSubtitle()),
                                         0,
-                                        plugin.getConfigFile().getSettings().getAuthTimeout() * 20, 10
-                                );
+                                        plugin.getConfigFile().getSettings().getAuthTimeout() * 20, 10);
                             }
 
                             ChatUtil.sendMessage(player, plugin.getLangFile().getMessages().getTfa().getRequired());
@@ -99,25 +98,31 @@ public class LoginCommand extends BaseCommand {
                             ChatUtil.sendMessage(player, plugin.getLangFile().getMessages().getLogin().getSuccess());
                             plugin.forceAuthenticate(player);
 
+                            plugin.getAltAccountManager().processPlayerRecord(player, ip);
+
                             if (plugin.getConfigFile().getSettings().getSendAfterAuth().isEnabled()) {
                                 plugin.getFoliaLib().getScheduler().runLater(() -> {
-                                    plugin.sendPlayerToServer(player, plugin.getConfigFile().getSettings().getSendAfterAuth().getServer());
+                                    plugin.sendPlayerToServer(player,
+                                            plugin.getConfigFile().getSettings().getSendAfterAuth().getServer());
                                 }, 20L);
                             }
                         }
                     } else if (result.getError() == ErrorCode.USER_NOT_FOUND) {
-                        ChatUtil.sendMessage(player, plugin.getLangFile().getMessages().getLogin().getAccountNotFound());
+                        ChatUtil.sendMessage(player,
+                                plugin.getLangFile().getMessages().getLogin().getAccountNotFound());
                     } else if (result.getError() == ErrorCode.WRONG_PASSWORD) {
                         plugin.getAuthMeCompatBridge().callFailedLogin(player);
                         if (plugin.getConfigFile().getSettings().isKickOnWrongPassword()) {
                             player.kickPlayer(String.join("\n",
-                                    ChatUtil.replacePlaceholders(plugin.getLangFile().getMessages().getKickWrongPassword(),
-                                            new Placeholder("{prefix}", plugin.getLangFile().getMessages().getPrefix()))
-                            ));
+                                    ChatUtil.replacePlaceholders(
+                                            plugin.getLangFile().getMessages().getKickWrongPassword(),
+                                            new Placeholder("{prefix}",
+                                                    plugin.getLangFile().getMessages().getPrefix()))));
                             return;
                         }
 
-                        ChatUtil.sendMessage(player, plugin.getLangFile().getMessages().getLogin().getIncorrectPassword());
+                        ChatUtil.sendMessage(player,
+                                plugin.getLangFile().getMessages().getLogin().getIncorrectPassword());
                     } else {
                         Shared.getDebugAPI().send("An unexpected error occurred during login: " + result, true);
                         ChatUtil.sendMessage(player, plugin.getLangFile().getMessages().getAnErrorOccurred());

@@ -14,6 +14,8 @@ import net.leaderos.auth.bukkit.command.LeaderOSCommand;
 import net.leaderos.auth.bukkit.command.LoginCommand;
 import net.leaderos.auth.bukkit.command.RegisterCommand;
 import net.leaderos.auth.bukkit.command.TfaCommand;
+import net.leaderos.auth.bukkit.configuration.AltDataConfig;
+import net.leaderos.auth.bukkit.helpers.AltAccountManager;
 import net.leaderos.auth.bukkit.configuration.Config;
 import net.leaderos.auth.bukkit.configuration.Language;
 import net.leaderos.auth.bukkit.helpers.ChatUtil;
@@ -50,6 +52,9 @@ public class Bukkit extends JavaPlugin {
 
     private Language langFile;
     private Config configFile;
+    private AltDataConfig altDataConfig;
+
+    private AltAccountManager altAccountManager;
 
     private Shared shared;
 
@@ -69,6 +74,8 @@ public class Bukkit extends JavaPlugin {
         foliaLib = new FoliaLib(this);
 
         setupFiles();
+
+        altAccountManager = new AltAccountManager(this);
 
         // Cache allowed commands
         cacheAllowedCommands();
@@ -135,6 +142,14 @@ public class Bukkit extends JavaPlugin {
             this.configFile = ConfigManager.create(Config.class, (it) -> {
                 it.withConfigurer(new YamlBukkitConfigurer());
                 it.withBindFile(new File(this.getDataFolder().getAbsolutePath(), "config.yml"));
+                it.withRemoveOrphans(true);
+                it.saveDefaults();
+                it.load(true);
+            });
+            this.altDataConfig = ConfigManager.create(AltDataConfig.class, (it) -> {
+                it.withConfigurer(new YamlBukkitConfigurer());
+                it.withBindFile(new File(this.getDataFolder().getAbsolutePath(), "alts.yml"));
+                it.withRemoveOrphans(true);
                 it.saveDefaults();
                 it.load(true);
             });
@@ -144,6 +159,7 @@ public class Bukkit extends JavaPlugin {
             this.langFile = ConfigManager.create(languageClass, (it) -> {
                 it.withConfigurer(new YamlBukkitConfigurer());
                 it.withBindFile(new File(this.getDataFolder().getAbsolutePath() + "/lang", langName + ".yml"));
+                it.withRemoveOrphans(true);
                 it.saveDefaults();
                 it.load(true);
             });

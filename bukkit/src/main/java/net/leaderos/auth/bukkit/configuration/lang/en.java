@@ -43,38 +43,30 @@ public class en extends Language {
 
         private List<String> kickTimeout = Lists.newArrayList(
                 "&cYou have been kicked due to inactivity.",
-                "&cPlease rejoin the server to continue."
-        );
+                "&cPlease rejoin the server to continue.");
 
         private List<String> kickAnError = Lists.newArrayList(
                 "&cOur auth servers is down at this moment.",
-                "&cPlease try again later."
-        );
+                "&cPlease try again later.");
 
         private List<String> kickNotRegistered = Lists.newArrayList(
                 "&cYou are not registered!",
-                "&cPlease register from our website to continue."
-        );
+                "&cPlease register from our website to continue.");
 
         private List<String> kickWrongPassword = Lists.newArrayList(
-                "&cWrong password!"
-        );
+                "&cWrong password!");
 
         private List<String> kickInvalidUsername = Lists.newArrayList(
-                "&cInvalid username!"
-        );
+                "&cInvalid username!");
 
         private List<String> kickUsernameCaseMismatch = Lists.newArrayList(
-                "&cYou should join using username &a{valid}&c, not &e{invalid}&c!"
-        );
+                "&cYou should join using username &a{valid}&c, not &e{invalid}&c!");
 
         private List<String> kickEmailNotVerified = Lists.newArrayList(
-                "&cPlease verify your email on our website to continue."
-        );
+                "&cPlease verify your email on our website to continue.");
 
         private List<String> kickMaxConnectionsPerIP = Lists.newArrayList(
-                "&cToo many connections from your IP address!"
-        );
+                "&cToo many connections from your IP address!");
 
         private String unknownAuthCommand = "{prefix} &cUnknown authentication command! Please use &a/register <password> <password> &cor &a/login <password> &ccommands.";
 
@@ -211,6 +203,20 @@ public class en extends Language {
             private String verificationFailed = "{prefix} &cTFA verification failed! Please try again.";
 
             private String success = "{prefix} &aTwo-factor authentication successful!";
+
+        }
+
+        @Getter
+        @Setter
+        public static class Discord extends Language.Messages.Discord {
+
+            private String username = "{player} - Alt Account Detected";
+
+            private String mcServerName = "TwiLight Network";
+
+            private String embedTitle = "Alt Accounts Found - {player}";
+
+            private String embedDescription = "`{content}`";
 
         }
 

@@ -31,6 +31,7 @@
 - **Komut Engelleme** — Giriş yapmamış oyuncular yalnızca kimlik doğrulama komutlarını kullanabilir
 - **Tab-Complete Gizleme** — Giriş yapmamış oyunculara sadece auth komutları gösterilir, namespace'li komutlar da filtrelenir (Bukkit 1.13+, BungeeCord)
 - **Komut Cooldown** — Giriş yapmamış oyuncular için komut spam koruması (Bukkit, Velocity)
+- **Gelişmiş Yan Hesap Takibi** — Oyuncunun IP adresi değişse dahi donanım/hesap eşleşmeleriyle yan hesap (alt-account) tespit edilir; çoklu hesap kullanımları loglanır ve anlık olarak Discord'a (Webhook) bildirim gönderilir
 - **Eylem Engelleme** — Giriş yapmamış oyuncular hareket edemez, sohbet edemez, etkileşimde bulunamaz, blok kırıp/koyamaz
 - **Anti-Bot** — IP tabanlı bağlantı sınırlaması bot saldırılarını önlemeye yardımcı olur
 - **Kullanıcı Adı Doğrulama** — Büyük/küçük harf uyumsuzluğu tespiti ve geçersiz kullanıcı adı engelleme
@@ -108,6 +109,7 @@
 - **Command Blocking** — Only authentication commands are allowed for unauthenticated players
 - **Tab-Complete Hiding** — Hides all commands from tab-completion except auth commands, including namespaced commands (Bukkit 1.13+, BungeeCord)
 - **Command Cooldown** — Rate-limiting for unauthenticated player commands to prevent API flooding (Bukkit, Velocity)
+- **Advanced Alt Account Tracking** — Detects multi-account/alt-account usage even if the player changes their IP address; all suspicious activities are logged and instantly forwarded to Discord via Webhooks
 - **Action Blocking** — Unauthenticated players cannot move, chat, interact, break/place blocks, open inventories, or perform any action
 - **Anti-Bot** — IP-based connection limiting helps prevent bot attacks
 - **Username Validation** — Username case mismatch detection and invalid username blocking
