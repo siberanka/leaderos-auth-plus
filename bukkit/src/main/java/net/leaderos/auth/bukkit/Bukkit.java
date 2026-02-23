@@ -14,7 +14,9 @@ import net.leaderos.auth.bukkit.command.LeaderOSCommand;
 import net.leaderos.auth.bukkit.command.LoginCommand;
 import net.leaderos.auth.bukkit.command.RegisterCommand;
 import net.leaderos.auth.bukkit.command.TfaCommand;
-import net.leaderos.auth.bukkit.configuration.AltDataConfig;
+import net.leaderos.auth.bukkit.database.Database;
+import net.leaderos.auth.bukkit.database.Mysql;
+import net.leaderos.auth.bukkit.database.Sqlite;
 import net.leaderos.auth.bukkit.helpers.AltAccountManager;
 import net.leaderos.auth.bukkit.configuration.Config;
 import net.leaderos.auth.bukkit.configuration.Language;
@@ -52,7 +54,8 @@ public class Bukkit extends JavaPlugin {
 
     private Language langFile;
     private Config configFile;
-    private AltDataConfig altDataConfig;
+
+    private Database database;
 
     private AltAccountManager altAccountManager;
 
@@ -74,6 +77,30 @@ public class Bukkit extends JavaPlugin {
         foliaLib = new FoliaLib(this);
 
         setupFiles();
+
+        boolean debug = getConfigFile().getSettings().getDatabase().isDebug();
+        String prefix = getConfigFile().getSettings().getDatabase().getPrefix();
+        if (getConfigFile().getSettings().getDatabase().getType().equalsIgnoreCase("MYSQL")) {
+            database = new Mysql(this, debug, prefix);
+        } else {
+            database = new Sqlite(this, debug, prefix);
+        }
+
+        if (!database.initialize()) {
+            getLogger().severe("Failed to initialize the database! Disabling plugin...");
+            getServer().getPluginManager().disablePlugin(this);
+            return;
+        }
+
+        int expirationTime = getConfigFile().getSettings().getDatabase().getExpirationTime();
+        if (expirationTime > 0) {
+            foliaLib.getScheduler().runAsync((task) -> {
+                int purged = database.purge(expirationTime);
+                if (purged > 0) {
+                    getLogger().info("Purged " + purged + " old IP records from the database.");
+                }
+            });
+        }
 
         altAccountManager = new AltAccountManager(this);
 
@@ -123,10 +150,18 @@ public class Bukkit extends JavaPlugin {
         if (isClassLoaded("org.bukkit.event.player.PlayerCommandSendEvent")) {
             getServer().getPluginManager().registerEvents(new TabCompleteListener(this), this);
         }
+
+        // Register PlaceholderAPI expansion
+        if (getServer().getPluginManager().getPlugin("PlaceholderAPI") != null) {
+            new net.leaderos.auth.bukkit.helpers.AltPlaceholderExpansion(this).register();
+        }
     }
 
     @Override
     public void onDisable() {
+        if (database != null) {
+            database.closeDataSource();
+        }
         foliaLib.getScheduler().cancelAllTasks();
         if (authMeCompatBridge != null) {
             authMeCompatBridge.shutdown();
@@ -142,13 +177,6 @@ public class Bukkit extends JavaPlugin {
             this.configFile = ConfigManager.create(Config.class, (it) -> {
                 it.withConfigurer(new YamlBukkitConfigurer());
                 it.withBindFile(new File(this.getDataFolder().getAbsolutePath(), "config.yml"));
-                it.withRemoveOrphans(true);
-                it.saveDefaults();
-                it.load(true);
-            });
-            this.altDataConfig = ConfigManager.create(AltDataConfig.class, (it) -> {
-                it.withConfigurer(new YamlBukkitConfigurer());
-                it.withBindFile(new File(this.getDataFolder().getAbsolutePath(), "alts.yml"));
                 it.withRemoveOrphans(true);
                 it.saveDefaults();
                 it.load(true);
@@ -171,11 +199,19 @@ public class Bukkit extends JavaPlugin {
     private void setupCommands() {
         commandManager = BukkitCommandManager.create(this);
 
+        commandManager.registerSuggestion(dev.triumphteam.cmd.core.suggestion.SuggestionKey.of("players"),
+                (sender, context) -> {
+                    return getServer().getOnlinePlayers().stream()
+                            .map(org.bukkit.entity.Player::getName)
+                            .collect(java.util.stream.Collectors.toList());
+                });
+
         commandManager.registerCommand(
                 new LeaderOSCommand(),
                 new LoginCommand(this, "login", getConfigFile().getSettings().getLoginCommands()),
                 new RegisterCommand(this, "register", getConfigFile().getSettings().getRegisterCommands()),
-                new TfaCommand(this, "tfa", getConfigFile().getSettings().getTfaCommands()));
+                new TfaCommand(this, "tfa", getConfigFile().getSettings().getTfaCommands()),
+                new net.leaderos.auth.bukkit.command.AltCommand(this));
 
         commandManager.registerMessage(MessageKey.INVALID_ARGUMENT, (sender, invalidArgumentContext) -> ChatUtil
                 .sendMessage(sender, getLangFile().getMessages().getCommand().getInvalidArgument()));

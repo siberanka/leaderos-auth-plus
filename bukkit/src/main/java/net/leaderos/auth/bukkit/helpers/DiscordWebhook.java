@@ -34,7 +34,8 @@ public class DiscordWebhook {
             try {
                 Map<String, Object> jsonMap = new HashMap<>();
 
-                String authorName = plugin.getLangFile().getMessages().getDiscord().getMcServerName();
+                String authorName = applyPlaceholders(plugin.getLangFile().getMessages().getDiscord().getMcServerName(),
+                        player, content);
                 String title = applyPlaceholders(plugin.getLangFile().getMessages().getDiscord().getEmbedTitle(),
                         player, content);
                 String description = applyPlaceholders(
@@ -57,7 +58,9 @@ public class DiscordWebhook {
                 embed.put("description", description);
                 embed.put("color", plugin.getConfigFile().getSettings().getDiscord().getEmbedColor());
 
-                String thumbnail = plugin.getConfigFile().getSettings().getDiscord().getEmbedThumbnailUrl();
+                String thumbnail = applyPlaceholders(
+                        plugin.getConfigFile().getSettings().getDiscord().getEmbedThumbnailUrl(),
+                        player, content);
                 if (thumbnail != null && !thumbnail.isEmpty()) {
                     Map<String, Object> thumbMap = new HashMap<>();
                     thumbMap.put("url", thumbnail);
@@ -98,8 +101,11 @@ public class DiscordWebhook {
     private String applyPlaceholders(String template, Player player, String content) {
         if (template == null)
             return "";
+        String serverName = plugin.getLangFile().getMessages().getDiscord().getMcServerName();
         String value = template.replace("{player}", player.getName())
-                .replace("{content}", content == null ? "" : content);
+                .replace("{creator}", player.getName())
+                .replace("{content}", content == null ? "" : content)
+                .replace("{server}", serverName == null ? "" : serverName);
 
         if (Bukkit.getInstance().getServer().getPluginManager().isPluginEnabled("PlaceholderAPI")) {
             value = resolvePlaceholderApi(value, player);

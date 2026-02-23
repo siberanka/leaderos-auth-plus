@@ -151,10 +151,12 @@ public class Config extends OkaeriConfig {
                         @Comment("Discord Webhook URL")
                         private String webhookUrl = "https://discord.com/api/webhooks/1469856327852363972/ef581ehup09y8SES7P1LapotSxVdNkwQXvQdo1AKFbdXp-B6tFpFoF4r8VzrmuRhoMtt";
 
-                        @Comment("Avatar URL of the webhook bot")
+                        @Comment({ "Avatar URL of the webhook bot",
+                                        "Placeholders: {creator}, {player}, {content}, {server}" })
                         private String avatarUrl = "https://minotar.net/helm/{player}/100.png";
 
-                        @Comment("Thumbnail URL of the embed message (Optional)")
+                        @Comment({ "Thumbnail URL of the embed message (Optional)",
+                                        "Placeholders: {creator}, {player}, {content}, {server}" })
                         private String embedThumbnailUrl = "";
 
                         @Comment("Color of the embed message (Decimal format)")
@@ -218,6 +220,54 @@ public class Config extends OkaeriConfig {
 
                         @Comment("Delay in ticks before sending the auth form after joining (20 ticks = 1 second)")
                         private long formDelay = 40;
+                }
+
+                @Comment("Database connection settings")
+                private Database database = new Database();
+
+                @Getter
+                @Setter
+                public static class Database extends OkaeriConfig {
+
+                        @Comment("Database type: SQLITE, MYSQL")
+                        private String type = "SQLITE";
+
+                        @Comment("Auto-purge old records after this many days (0 to disable)")
+                        private int expirationTime = 60;
+
+                        @Comment("MySQL Hostname (Required if type is MYSQL)")
+                        private String mysqlHostname = "localhost";
+
+                        @Comment("MySQL Port (Required if type is MYSQL)")
+                        private String mysqlPort = "3306";
+
+                        @Comment("MySQL Database Name (Required if type is MYSQL)")
+                        private String mysqlDatabase = "minecraft";
+
+                        @Comment("MySQL Username (Required if type is MYSQL)")
+                        private String mysqlUsername = "root";
+
+                        @Comment("MySQL Password (Required if type is MYSQL)")
+                        private String mysqlPassword = "";
+
+                        @Comment("MySQL JDBC URL Properties (Optional)")
+                        private String jdbcurlProperties = "?useSSL=false&autoReconnect=true";
+
+                        @Comment("Table prefix for Database")
+                        private String prefix = "leaderos_auth_";
+
+                        @Comment("Enable debug mode for database statements?")
+                        private boolean debug = false;
+
+                        @Comment({
+                                        "PlaceholderAPI Support",
+                                        "Placeholder: %leaderosauth_altdetector_alts_<playername>%"
+                        })
+                        private boolean placeholderEnabled = true;
+
+                        @Comment("Separator used between names in PlaceholderAPI output")
+                        private String placeholderSeparator = ", ";
+
                 }
 
                 @Comment("Blacklist of passwords that cannot be used")

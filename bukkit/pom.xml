@@ -26,6 +26,30 @@
                 <filtering>true</filtering>
             </resource>
         </resources>
+        <plugins>
+            <!-- Shade HikariCP -->
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-shade-plugin</artifactId>
+                <version>3.6.0</version>
+                <configuration>
+                    <relocations>
+                        <relocation>
+                            <pattern>com.zaxxer.hikari</pattern>
+                            <shadedPattern>net.leaderos.auth.bukkit.hikari</shadedPattern>
+                        </relocation>
+                    </relocations>
+                </configuration>
+                <executions>
+                    <execution>
+                        <phase>package</phase>
+                        <goals>
+                            <goal>shade</goal>
+                        </goals>
+                    </execution>
+                </executions>
+            </plugin>
+        </plugins>
     </build>
 
     <repositories>
@@ -123,6 +147,13 @@
             <artifactId>api</artifactId>
             <version>2.2.3-SNAPSHOT</version>
             <scope>provided</scope>
+        </dependency>
+        <!-- HikariCP for Database (Java 8 compatible version) -->
+        <dependency>
+            <groupId>com.zaxxer</groupId>
+            <artifactId>HikariCP</artifactId>
+            <version>4.0.3</version>
+            <scope>compile</scope>
         </dependency>
     </dependencies>
 </project>

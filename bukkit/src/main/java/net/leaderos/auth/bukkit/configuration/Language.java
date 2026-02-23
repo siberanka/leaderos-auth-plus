@@ -79,6 +79,7 @@ public class Language extends OkaeriConfig {
         private Register register = new Register();
         private Login login = new Login();
         private Tfa tfa = new Tfa();
+        private Alt alt = new Alt();
         private BedrockForms bedrockForms = new BedrockForms();
         private Discord discord = new Discord();
 
@@ -171,6 +172,32 @@ public class Language extends OkaeriConfig {
 
         @Getter
         @Setter
+        public static class Alt extends OkaeriConfig {
+
+            @Comment("Notification message sent to players with leaderos.auth.alt.notify permission")
+            private String notifyMessage = "{prefix} &b[AltDetector] {player} &emay be an alt of: &c{alts}";
+
+            @Comment("Format for each player name in the alt list")
+            private String playerListFormat = "{player}";
+
+            @Comment("Separator between player names in the alt list")
+            private String playerListSeparator = ", ";
+
+            private String cmdPlayerNotFound = "{prefix} &cPlayer {player} not found.";
+
+            private String cmdNoAlts = "{prefix} &e{player} has no known alt accounts.";
+
+            private String cmdAltsList = "{prefix} &eAlt accounts for {player}: &c{alts}";
+
+            private String cmdDeletedSingular = "{prefix} &a1 record removed for {player}.";
+
+            private String cmdDeletedPlural = "{prefix} &a{amount} records removed for {player}.";
+
+            private String cmdDeletedNotFound = "{prefix} &cNo records found to delete for {player}.";
+        }
+
+        @Getter
+        @Setter
         public static class BedrockForms extends OkaeriConfig {
 
             private LoginForm loginForm = new LoginForm();
@@ -211,16 +238,19 @@ public class Language extends OkaeriConfig {
         @Setter
         public static class Discord extends OkaeriConfig {
 
-            @Comment("Username of the webhook bot")
+            @Comment({ "Username of the webhook bot",
+                    "Placeholders: {creator}, {player}, {content}, {server}" })
             private String username = "{player} - Yan Hesap Bulundu";
 
             @Comment("Server name to display as author")
-            private String mcServerName = "TwiLight Network";
+            private String mcServerName = "Minecraft Server";
 
-            @Comment("Title of the embed message")
+            @Comment({ "Title of the embed message",
+                    "Placeholders: {creator}, {player}, {content}, {server}" })
             private String embedTitle = "Yan Hesaplar Bulundu - {player}";
 
-            @Comment("Description of the embed message")
+            @Comment({ "Description of the embed message",
+                    "Placeholders: {creator}, {player}, {content}, {server}" })
             private String embedDescription = "`{content}`";
         }
 

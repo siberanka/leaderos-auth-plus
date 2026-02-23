@@ -41,6 +41,8 @@
 #### 🌍 Çoklu Dil Desteği
 - **İngilizce (`en`)** ve **Türkçe (`tr`)** dil dosyaları dahil
 - Tüm mesajlar `lang/` dizinindeki YAML dosyaları ile tamamen yapılandırılabilir
+- **Okaeri Orphan Config:** Konfigürasyon ve dil dosyaları güncellendiğinde artık kullanılmayan, eski veya yanlış yazılmış mesajları/anahtarları otomatik olarak temizler.
+- **Discord Mesaj Desteği:** Yan hesap bulunduğunda atılan webhook bildirimleri, her dil dosyası için özel mesaj, başlık, kullanıcı adı ve bot adı ile yapılandırılabilir.
 
 #### 🖥️ Çoklu Platform
 
@@ -119,6 +121,8 @@
 #### 🌍 Multi-Language Support
 - **English (`en`)** and **Turkish (`tr`)** language files included
 - All messages are fully configurable via YAML files in `lang/` directory
+- **Okaeri Orphan Config:** Configuration and language files will automatically remove abandoned/older or misspelled text components and settings when the server initializes.
+- **Discord Webhook Texts:** Webhook notification text elements for Alt Detected functionality are mapped directly into your current language file.
 
 #### 🖥️ Multi-Platform
 
@@ -209,6 +213,31 @@ settings:
     enabled: true
     form-delay: 40  # tick (20 = 1 saniye / 1 second)
   
+  # Yan hesap bildirimi için Discord ayarları / Discord Webhook settings for Alt Account tracking
+  discord:
+    enabled: true
+    webhook-url: "https://discord.com/api/webhooks/your_webhook"
+    avatar-url: "https://minotar.net/helm/{player}/100.png"
+    embed-thumbnail-url: ""
+    embed-color: 16711680 # Renk (Decimal format) / Color
+
+  # IP başına kayıt olma sınırı / Registration Limit settings per IP
+  register-limit:
+    enabled: true
+    max-accounts-per-ip: 3
+
+  # Veritabanı bağlantı ayarları / Database Connection settings (SQLITE or MYSQL)
+  database:
+    type: "SQLITE"
+    mysql-hostname: "localhost"
+    mysql-port: "3306"
+    mysql-database: "minecraft"
+    mysql-username: "root"
+    mysql-password: ""
+    jdbcurl-properties: "?useSSL=false&autoReconnect=true"
+    prefix: "leaderos_auth_"
+    debug: false
+
   # Güvensiz şifre kara listesi / Unsafe passwords blacklist
   unsafe-passwords:
     - "123456"
