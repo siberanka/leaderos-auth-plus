@@ -26,7 +26,7 @@ public class AltAccountManager {
             return;
 
         // Skip if alt logger is disabled
-        if (!plugin.getConfigFile().getSettings().getDatabase().isAltLoggerEnabled()) {
+        if (!plugin.getConfigFile().getSettings().getAltTracker().isEnabled()) {
             return;
         }
 

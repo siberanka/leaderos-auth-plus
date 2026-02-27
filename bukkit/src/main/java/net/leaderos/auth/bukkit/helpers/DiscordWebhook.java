@@ -3,6 +3,9 @@ package net.leaderos.auth.bukkit.helpers;
 import net.leaderos.auth.bukkit.Bukkit;
 import org.bukkit.entity.Player;
 
+import java.io.BufferedReader;
+import java.io.InputStream;
+import java.io.InputStreamReader;
 import java.io.OutputStream;
 import java.net.HttpURLConnection;
 import java.net.URI;
@@ -89,11 +92,39 @@ public class DiscordWebhook {
                 }
 
                 int responseCode = connection.getResponseCode();
-                if (responseCode != 204 && responseCode != 200) {
+                boolean debugEnabled = plugin.getConfigFile().getSettings().getDatabase().isDebug();
+
+                if (responseCode == 204 || responseCode == 200) {
+                    if (debugEnabled) {
+                        plugin.getLogger()
+                                .info("[Discord Debug] Webhook sent successfully. Response code: " + responseCode);
+                    }
+                } else {
+                    // Read error response body
+                    StringBuilder responseBody = new StringBuilder();
+                    try (InputStream errorStream = connection.getErrorStream()) {
+                        if (errorStream != null) {
+                            try (BufferedReader reader = new BufferedReader(
+                                    new InputStreamReader(errorStream, StandardCharsets.UTF_8))) {
+                                String line;
+                                while ((line = reader.readLine()) != null) {
+                                    responseBody.append(line);
+                                }
+                            }
+                        }
+                    } catch (Exception ignored) {
+                    }
+
                     plugin.getLogger().warning("Discord webhook returned response code: " + responseCode);
+                    if (debugEnabled && responseBody.length() > 0) {
+                        plugin.getLogger().warning("[Discord Debug] Response body: " + responseBody);
+                    }
                 }
             } catch (Exception e) {
                 plugin.getLogger().warning("Failed to send Discord webhook: " + e.getMessage());
+                if (plugin.getConfigFile().getSettings().getDatabase().isDebug()) {
+                    e.printStackTrace();
+                }
             }
         });
     }

@@ -4,9 +4,7 @@ import dev.triumphteam.cmd.core.BaseCommand;
 import dev.triumphteam.cmd.core.annotation.Default;
 import lombok.RequiredArgsConstructor;
 import net.leaderos.auth.bukkit.Bukkit;
-import net.leaderos.auth.bukkit.helpers.BossBarUtil;
 import net.leaderos.auth.bukkit.helpers.ChatUtil;
-import net.leaderos.auth.bukkit.helpers.TitleUtil;
 import net.leaderos.auth.shared.Shared;
 import net.leaderos.auth.shared.enums.ErrorCode;
 import net.leaderos.auth.shared.enums.RegisterSecondArg;
@@ -106,8 +104,9 @@ public class RegisterCommand extends BaseCommand {
             String email = secondArgType == RegisterSecondArg.EMAIL ? secondArg : null;
             String userAgent = UserAgentUtil.generateUserAgent(!plugin.getConfigFile().getSettings().isSession());
 
-            // Registration Limit check
-            if (plugin.getAltAccountManager().hasReachedLimit(ip)) {
+            // Registration Limit check (checks both direct IP registers and total network
+            // alts)
+            if (plugin.getAltAccountManager().hasReachedLimit(ip, player.getName())) {
                 ChatUtil.sendMessage(player, plugin.getLangFile().getMessages().getRegister().getRegisterLimit());
                 return;
             }

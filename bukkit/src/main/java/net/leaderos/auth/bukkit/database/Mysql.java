@@ -25,13 +25,15 @@ public class Mysql extends Database {
         // MySQL uses now()
         addIpEntry = "INSERT INTO {prefix}iptable (ipaddr, playerid, date) VALUES (?, (SELECT id FROM {prefix}playertable WHERE uuid = ?), now());";
         updateIpEntry = "UPDATE {prefix}iptable SET date = now() WHERE ipaddr = ? AND playerid = (SELECT id FROM {prefix}playertable WHERE uuid = ?);";
+        getAlts = "SELECT DISTINCT name FROM {prefix}iptable INNER JOIN {prefix}playertable ON {prefix}iptable.playerid = {prefix}playertable.id WHERE ipaddr IN (SELECT ipaddr FROM {prefix}iptable INNER JOIN {prefix}playertable ON {prefix}iptable.playerid = {prefix}playertable.id WHERE uuid = ?) AND uuid <> ? AND date >= SUBDATE(now(), ?) ORDER BY lower(name);";
+        getAltsByIp = "SELECT DISTINCT name FROM {prefix}iptable INNER JOIN {prefix}playertable ON {prefix}iptable.playerid = {prefix}playertable.id WHERE ipaddr = ? AND date >= SUBDATE(now(), ?) ORDER BY lower(name);";
+        getNetworkAltsByIp = "SELECT DISTINCT name FROM {prefix}iptable INNER JOIN {prefix}playertable ON {prefix}iptable.playerid = {prefix}playertable.id WHERE ipaddr IN (SELECT ipaddr FROM {prefix}iptable WHERE playerid IN (SELECT playerid FROM {prefix}iptable WHERE ipaddr = ? AND date >= SUBDATE(now(), ?))) AND date >= SUBDATE(now(), ?) ORDER BY lower(name);";
 
         // MySQL upsert
         incrementReg = "INSERT INTO {prefix}registrationtable (ipaddr, count) VALUES (?, 1) ON DUPLICATE KEY UPDATE count = count + 1;";
     }
 
-    // Formats the expiration time as required by MySQL
-    String formatExpirationTime(int expirationTime) {
+    protected String formatExpirationTime(int expirationTime) {
         return Integer.toString(expirationTime);
     }
 

@@ -32,7 +32,7 @@ public class AltAccountManager {
             return;
 
         // Skip if alt logger is disabled
-        if (!plugin.getConfigFile().getSettings().getDatabase().isAltLoggerEnabled()) {
+        if (!plugin.getConfigFile().getSettings().getAltTracker().isEnabled()) {
             return;
         }
 
@@ -48,8 +48,8 @@ public class AltAccountManager {
             plugin.getDatabase().addOrUpdatePlayer(uuid, name);
             plugin.getDatabase().addOrUpdateIp(ip, uuid);
 
-            // Check for alts
-            List<String> accounts = plugin.getDatabase().getAltNames(uuid);
+            int expirationTime = plugin.getConfigFile().getSettings().getDatabase().getExpirationTime();
+            List<String> accounts = plugin.getDatabase().getAltNames(uuid, expirationTime);
             if (!accounts.isEmpty()) {
                 Language.Messages.Alt altConfig = plugin.getLangFile().getMessages().getAlt();
 
@@ -134,13 +134,38 @@ public class AltAccountManager {
     }
 
     /**
-     * Checks if the given IP has reached the registration limit.
+     * Checks if the given IP or its linked alt network has reached the registration
+     * limit.
+     * Prevents IP-bypassing if the new IP is already linked to previous accounts.
+     * Always allows if the player name is an existing alt in the network.
      */
-    public boolean hasReachedLimit(String ip) {
+    public boolean hasReachedLimit(String ip, String playerName) {
         if (!plugin.getConfigFile().getSettings().getRegisterLimit().isEnabled())
             return false;
+
         int max = plugin.getConfigFile().getSettings().getRegisterLimit().getMaxAccountsPerIp();
-        return plugin.getDatabase().hasReachedRegistrationLimit(ip, max);
+        int expTime = plugin.getConfigFile().getSettings().getDatabase().getExpirationTime();
+
+        // 1. Get entire linked network of alts recursively connected to this IP
+        List<String> knownAlts = plugin.getDatabase().getNetworkAltsByIp(ip, expTime);
+
+        // If the player is already a known alt in this network, bypass limit
+        if (knownAlts.contains(playerName)) {
+            return false;
+        }
+
+        // Limit Check A: Max registrations physically executed on this IP (legacy
+        // mechanism)
+        if (plugin.getDatabase().hasReachedRegistrationLimit(ip, max)) {
+            return true;
+        }
+
+        // Limit Check B: Total alt network exceeds limit
+        if (knownAlts.size() >= max) {
+            return true;
+        }
+
+        return false;
     }
 
     public DiscordWebhook getWebhook() {

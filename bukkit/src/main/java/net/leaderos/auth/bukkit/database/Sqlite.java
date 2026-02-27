@@ -32,9 +32,17 @@ public class Sqlite extends Database {
         // SQLite uses datetime('now')
         addIpEntry = "INSERT INTO {prefix}iptable (ipaddr, playerid, date) VALUES (?, (SELECT id FROM {prefix}playertable WHERE uuid = ?), datetime('now'));";
         updateIpEntry = "UPDATE {prefix}iptable SET date = datetime('now') WHERE ipaddr = ? AND playerid = (SELECT id FROM {prefix}playertable WHERE uuid = ?);";
+        getAlts = "SELECT DISTINCT name FROM {prefix}iptable INNER JOIN {prefix}playertable ON {prefix}iptable.playerid = {prefix}playertable.id WHERE ipaddr IN (SELECT ipaddr FROM {prefix}iptable INNER JOIN {prefix}playertable ON {prefix}iptable.playerid = {prefix}playertable.id WHERE uuid = ?) AND uuid <> ? AND date >= datetime('now', ?) ORDER BY lower(name);";
+        getAltsByIp = "SELECT DISTINCT name FROM {prefix}iptable INNER JOIN {prefix}playertable ON {prefix}iptable.playerid = {prefix}playertable.id WHERE ipaddr = ? AND date >= datetime('now', ?) ORDER BY lower(name);";
+        getNetworkAltsByIp = "SELECT DISTINCT name FROM {prefix}iptable INNER JOIN {prefix}playertable ON {prefix}iptable.playerid = {prefix}playertable.id WHERE ipaddr IN (SELECT ipaddr FROM {prefix}iptable WHERE playerid IN (SELECT playerid FROM {prefix}iptable WHERE ipaddr = ? AND date >= datetime('now', ?))) AND date >= datetime('now', ?) ORDER BY lower(name);";
 
         // SQLite upsert
         incrementReg = "INSERT INTO {prefix}registrationtable (ipaddr, count) VALUES (?, 1) ON CONFLICT(ipaddr) DO UPDATE SET count = count + 1;";
+    }
+
+    @Override
+    protected String formatExpirationTime(int expirationTime) {
+        return "-" + expirationTime + " days";
     }
 
     @Override

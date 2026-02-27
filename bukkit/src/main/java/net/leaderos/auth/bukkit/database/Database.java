@@ -29,7 +29,9 @@ public abstract class Database {
     protected String updateIpEntry; // Defined by impl
     protected String checkIpEntry = "SELECT EXISTS (SELECT 1 FROM {prefix}iptable INNER JOIN {prefix}playertable ON {prefix}iptable.playerid = {prefix}playertable.id WHERE ipaddr = ? AND uuid = ?);";
 
-    protected String getAlts = "SELECT DISTINCT name FROM {prefix}iptable INNER JOIN {prefix}playertable ON {prefix}iptable.playerid = {prefix}playertable.id WHERE ipaddr IN (SELECT ipaddr FROM {prefix}iptable INNER JOIN {prefix}playertable ON {prefix}iptable.playerid = {prefix}playertable.id WHERE uuid = ?) AND uuid <> ? ORDER BY lower(name);";
+    protected String getAlts; // Defined by impl since datetime function varies
+    protected String getAltsByIp;
+    protected String getNetworkAltsByIp;
 
     protected String incrementReg; // Defined by impl since upsert syntax varies
     protected String checkReg = "SELECT count FROM {prefix}registrationtable WHERE ipaddr = ?;";
@@ -74,6 +76,8 @@ public abstract class Database {
      * @return Number of records deleted.
      */
     public abstract int deletePlayerAlts(String playerName);
+
+    protected abstract String formatExpirationTime(int expirationTime);
 
     protected String replacePrefix(String statement) {
         return statement.replace("{prefix}", prefix);
@@ -168,7 +172,7 @@ public abstract class Database {
         }
     }
 
-    public List<String> getAltNames(String uuid) {
+    public List<String> getAltNames(String uuid, int expirationTime) {
         List<String> alts = new ArrayList<>();
         try (Connection conn = getConnection()) {
             if (conn == null)
@@ -176,6 +180,7 @@ public abstract class Database {
             try (PreparedStatement stmt = conn.prepareStatement(replacePrefix(getAlts))) {
                 stmt.setString(1, uuid);
                 stmt.setString(2, uuid);
+                stmt.setString(3, formatExpirationTime(expirationTime));
                 try (ResultSet rs = stmt.executeQuery()) {
                     while (rs.next()) {
                         alts.add(rs.getString("name"));
@@ -184,6 +189,47 @@ public abstract class Database {
             }
         } catch (SQLException e) {
             plugin.getLogger().warning("Error retrieving alts: " + e.getMessage());
+        }
+        return alts;
+    }
+
+    public List<String> getAltNamesByIp(String ip, int expirationTime) {
+        List<String> alts = new ArrayList<>();
+        try (Connection conn = getConnection()) {
+            if (conn == null)
+                return alts;
+            try (PreparedStatement stmt = conn.prepareStatement(replacePrefix(getAltsByIp))) {
+                stmt.setString(1, ip);
+                stmt.setString(2, formatExpirationTime(expirationTime));
+                try (ResultSet rs = stmt.executeQuery()) {
+                    while (rs.next()) {
+                        alts.add(rs.getString("name"));
+                    }
+                }
+            }
+        } catch (SQLException e) {
+            plugin.getLogger().warning("Error retrieving alts by IP: " + e.getMessage());
+        }
+        return alts;
+    }
+
+    public List<String> getNetworkAltsByIp(String ip, int expirationTime) {
+        List<String> alts = new ArrayList<>();
+        try (Connection conn = getConnection()) {
+            if (conn == null)
+                return alts;
+            try (PreparedStatement stmt = conn.prepareStatement(replacePrefix(getNetworkAltsByIp))) {
+                stmt.setString(1, ip);
+                stmt.setString(2, formatExpirationTime(expirationTime));
+                stmt.setString(3, formatExpirationTime(expirationTime));
+                try (ResultSet rs = stmt.executeQuery()) {
+                    while (rs.next()) {
+                        alts.add(rs.getString("name"));
+                    }
+                }
+            }
+        } catch (SQLException e) {
+            plugin.getLogger().warning("Error retrieving network alts by IP: " + e.getMessage());
         }
         return alts;
     }

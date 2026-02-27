@@ -163,7 +163,7 @@ public class Velocity {
 
     private void setupDatabase() {
         Config.Settings.Database dbConfig = configFile.getSettings().getDatabase();
-        if (!dbConfig.isAltLoggerEnabled()) {
+        if (!configFile.getSettings().getAltTracker().isEnabled()) {
             logger.info("Alt account logger is disabled.");
             return;
         }

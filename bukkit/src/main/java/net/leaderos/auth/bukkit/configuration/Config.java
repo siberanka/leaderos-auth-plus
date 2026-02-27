@@ -161,6 +161,9 @@ public class Config extends OkaeriConfig {
 
                         @Comment("Color of the embed message (Decimal format)")
                         private int embedColor = 16711680;
+
+                        @Comment("Log Discord Webhook responses or errors for debugging")
+                        private boolean debug = false;
                 }
 
                 @Comment("Registration Limit settings per IP")
@@ -256,9 +259,6 @@ public class Config extends OkaeriConfig {
                         @Comment("Table prefix for Database")
                         private String prefix = "leaderos_auth_";
 
-                        @Comment("Enable Alt Logger (alt account detection and notifications)")
-                        private boolean altLoggerEnabled = false;
-
                         @Comment("Enable debug mode for database statements?")
                         private boolean debug = false;
 
@@ -271,6 +271,16 @@ public class Config extends OkaeriConfig {
                         @Comment("Separator used between names in PlaceholderAPI output")
                         private String placeholderSeparator = ", ";
 
+                }
+
+                @Comment("Alt Account Tracking settings")
+                private AltTracker altTracker = new AltTracker();
+
+                @Getter
+                @Setter
+                public static class AltTracker extends OkaeriConfig {
+                        @Comment("Enable Alt Logger (alt account detection in database)")
+                        private boolean enabled = true;
                 }
 
                 @Comment("Blacklist of passwords that cannot be used")
