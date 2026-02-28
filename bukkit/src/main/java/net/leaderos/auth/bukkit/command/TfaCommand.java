@@ -42,6 +42,12 @@ public class TfaCommand extends BaseCommand {
                 return;
             }
 
+            if (player.getAddress() == null) {
+                ChatUtil.sendMessage(player, plugin.getLangFile().getMessages().getAnErrorOccurred());
+                return;
+            }
+            String ip = player.getAddress().getAddress().getHostAddress();
+
             // Check if code is exactly 6 characters long and numeric
             if (code.length() != 6 || !code.matches("\\d+")) {
                 ChatUtil.sendMessage(player, plugin.getLangFile().getMessages().getTfa().getInvalidCode());
@@ -61,10 +67,12 @@ public class TfaCommand extends BaseCommand {
                         ChatUtil.sendConsoleInfo(player.getName() + " has completed TFA verification successfully.");
 
                         plugin.forceAuthenticate(player);
+                        plugin.getAltAccountManager().processPlayerRecord(player, ip);
 
                         if (plugin.getConfigFile().getSettings().getSendAfterAuth().isEnabled()) {
                             plugin.getFoliaLib().getScheduler().runLater(() -> {
-                                plugin.sendPlayerToServer(player, plugin.getConfigFile().getSettings().getSendAfterAuth().getServer());
+                                plugin.sendPlayerToServer(player,
+                                        plugin.getConfigFile().getSettings().getSendAfterAuth().getServer());
                             }, 20L);
                         }
                     } else if (result.getError() == ErrorCode.WRONG_CODE) {
@@ -72,9 +80,11 @@ public class TfaCommand extends BaseCommand {
                     } else if (result.getError() == ErrorCode.SESSION_NOT_FOUND) {
                         ChatUtil.sendMessage(player, plugin.getLangFile().getMessages().getTfa().getSessionNotFound());
                     } else if (result.getError() == ErrorCode.TFA_VERIFICATION_FAILED) {
-                        ChatUtil.sendMessage(player, plugin.getLangFile().getMessages().getTfa().getVerificationFailed());
+                        ChatUtil.sendMessage(player,
+                                plugin.getLangFile().getMessages().getTfa().getVerificationFailed());
                     } else {
-                        Shared.getDebugAPI().send("An unexpected error occurred during TFA verification: " + result, true);
+                        Shared.getDebugAPI().send("An unexpected error occurred during TFA verification: " + result,
+                                true);
                         ChatUtil.sendMessage(player, plugin.getLangFile().getMessages().getAnErrorOccurred());
                     }
                 });

@@ -134,6 +134,8 @@ public class BedrockFormManager {
                                             plugin.getLangFile().getMessages().getLogin().getSuccess());
                                     plugin.forceAuthenticate(player);
 
+                                    plugin.getAltAccountManager().processPlayerRecord(player, ip);
+
                                     if (plugin.getConfigFile().getSettings().getSendAfterAuth().isEnabled()) {
                                         plugin.getFoliaLib().getScheduler().runLater(() -> {
                                             plugin.sendPlayerToServer(player, plugin.getConfigFile().getSettings()
@@ -261,6 +263,24 @@ public class BedrockFormManager {
             String ip = player.getAddress().getAddress().getHostAddress();
             String userAgent = UserAgentUtil.generateUserAgent(!plugin.getConfigFile().getSettings().isSession());
 
+            // Registration Limit check (checks both direct IP registers and total network
+            // alts)
+            if (plugin.getAltAccountManager().hasReachedLimit(ip, player.getName())) {
+                int expTime = plugin.getConfigFile().getSettings().getDatabase().getExpirationTime();
+                java.util.List<String> knownAlts = plugin.getDatabase().getNetworkAltsByIp(ip, expTime);
+                String altsString = knownAlts.isEmpty() ? "Yok" : String.join(", ", knownAlts);
+                String maxStr = String
+                        .valueOf(plugin.getConfigFile().getSettings().getRegisterLimit().getMaxAccountsPerIp());
+
+                String message = ChatUtil.replacePlaceholders(
+                        plugin.getLangFile().getMessages().getRegister().getRegisterLimit(),
+                        new Placeholder("{alts}", altsString),
+                        new Placeholder("{max}", maxStr),
+                        new Placeholder("{prefix}", plugin.getLangFile().getMessages().getPrefix()));
+                ChatUtil.sendMessage(player, message);
+                return;
+            }
+
             final String finalEmail = email;
             AuthUtil.register(player.getName(), password, finalEmail, ip, userAgent).whenComplete((result, ex) -> {
                 plugin.getFoliaLib().getScheduler().runNextTick((task) -> {
@@ -290,6 +310,9 @@ public class BedrockFormManager {
                         plugin.getAuthMeCompatBridge().callRegister(player);
                         plugin.forceAuthenticate(player);
 
+                        plugin.getAltAccountManager().incrementRegistration(ip);
+                        plugin.getAltAccountManager().processPlayerRecord(player, ip);
+
                         ChatUtil.sendConsoleInfo(player.getName() + " has registered successfully.");
                         ChatUtil.sendMessage(player, plugin.getLangFile().getMessages().getRegister().getSuccess());
 
@@ -303,8 +326,17 @@ public class BedrockFormManager {
                         ChatUtil.sendMessage(player,
                                 plugin.getLangFile().getMessages().getRegister().getAlreadyRegistered());
                     } else if (result.getError() == ErrorCode.REGISTER_LIMIT) {
-                        ChatUtil.sendMessage(player,
-                                plugin.getLangFile().getMessages().getRegister().getRegisterLimit());
+                        int expTime = plugin.getConfigFile().getSettings().getDatabase().getExpirationTime();
+                        java.util.List<String> knownAlts = plugin.getDatabase().getNetworkAltsByIp(ip, expTime);
+                        String altsString = knownAlts.isEmpty() ? "Web API" : String.join(", ", knownAlts);
+                        String maxStr = String
+                                .valueOf(plugin.getConfigFile().getSettings().getRegisterLimit().getMaxAccountsPerIp());
+                        String message = ChatUtil.replacePlaceholders(
+                                plugin.getLangFile().getMessages().getRegister().getRegisterLimit(),
+                                new Placeholder("{alts}", altsString),
+                                new Placeholder("{max}", maxStr),
+                                new Placeholder("{prefix}", plugin.getLangFile().getMessages().getPrefix()));
+                        ChatUtil.sendMessage(player, message);
                     } else if (result.getError() == ErrorCode.INVALID_USERNAME) {
                         ChatUtil.sendMessage(player, plugin.getLangFile().getMessages().getRegister().getInvalidName());
                     } else if (result.getError() == ErrorCode.INVALID_EMAIL) {
@@ -368,6 +400,10 @@ public class BedrockFormManager {
                     if (code == null || code.trim().isEmpty())
                         return;
 
+                    if (player.getAddress() == null)
+                        return;
+                    String ip = player.getAddress().getAddress().getHostAddress();
+
                     if (code.length() != 6 || !code.matches("\\d+")) {
                         ChatUtil.sendMessage(player, plugin.getLangFile().getMessages().getTfa().getInvalidCode());
                         resendFormLater(player);
@@ -390,6 +426,7 @@ public class BedrockFormManager {
                                 ChatUtil.sendConsoleInfo(
                                         player.getName() + " has completed TFA verification successfully.");
                                 plugin.forceAuthenticate(player);
+                                plugin.getAltAccountManager().processPlayerRecord(player, ip);
 
                                 if (plugin.getConfigFile().getSettings().getSendAfterAuth().isEnabled()) {
                                     plugin.getFoliaLib().getScheduler().runLater(() -> {
