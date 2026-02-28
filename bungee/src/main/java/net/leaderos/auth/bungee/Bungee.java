@@ -16,7 +16,6 @@ import net.md_5.bungee.api.plugin.Plugin;
 import org.bstats.bungeecord.Metrics;
 
 import java.io.File;
-import java.util.HashMap;
 import java.util.Map;
 import java.util.logging.Level;
 
@@ -25,7 +24,7 @@ public class Bungee extends Plugin {
 
     @Getter
     private static Bungee instance;
-    private final Map<String, Boolean> authenticatedPlayers = new HashMap<>();
+    private final Map<String, Boolean> authenticatedPlayers = new java.util.concurrent.ConcurrentHashMap<>();
     private Shared shared;
     private Config configFile;
 

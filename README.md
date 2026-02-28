@@ -37,6 +37,9 @@
 - **Kullanıcı Adı Doğrulama** — Büyük/küçük harf uyumsuzluğu tespiti ve geçersiz kullanıcı adı engelleme
 - **Konsol Log Filtreleme** — Kimlik doğrulama komutları konsolda gizlenir (şifre sızıntısını önler)
 - **Thread-Safe Oturum Yönetimi** — ConcurrentHashMap ile güvenli eşzamanlı erişim
+- **Veri Kaybı (Crash) Koruması (SQLite)** — `journal_mode=WAL` ve `synchronous=NORMAL` entegrasyonu sayesinde sunucu çöküşlerinde veritabanının sıfırlanması veya kilitlenmesi engellenmiştir.
+- **Kesin Bellek (Memory Leak) Koruması** — Önbellek haritaları, komut süreleri vb. bilgiler, oyuncular çıkış komutu veya `PlayerQuitEvent` tetiklediği andan itibaren doğrudan GC vasıtasıyla bellekten atılır.
+- **Vanilla İstismar (Exploit/Dupe) Önleyici** — Giriş onaylanmadan veya kayıt bitmeden önce gerçekleşen eşya sürükleme (`InventoryDrag`), el değiştirme (`SwapHandItem`) ve anlık can kaybında (`PlayerDeath`) eşyaların dupe edilmesi tamamen engellendi.
 
 #### 🌍 Çoklu Dil Desteği
 - **İngilizce (`en`)** ve **Türkçe (`tr`)** dil dosyaları dahil
@@ -117,6 +120,9 @@
 - **Username Validation** — Username case mismatch detection and invalid username blocking
 - **Console Log Filtering** — Authentication commands are hidden from console logs (prevents password leaks)
 - **Thread-Safe Session Management** — ConcurrentHashMap for safe concurrent access
+- **Database Crash Resilience (SQLite)** — Forcefully integrates `journal_mode=WAL` and `synchronous=NORMAL` queries, assuring databases never wipe out or fail upon unexpected/hard server crashes (`kill -9`).
+- **Memory Leak Preventions** — Ensures completely strict lifecycle checks across Maps/Arrays efficiently, explicitly removing generic UUID data logs safely executing on generic `PlayerQuitEvent`.
+- **Vanilla Exploit Defenses** — Unauthenticated profiles cannot interact with inner-game exploits securely, blocking capabilities heavily related to generic `InventoryDragEvent` (dragging items), SwapHands, and Drop items prior explicitly utilizing `PlayerDeathEvent` preventing item duplications dynamically.
 
 #### 🌍 Multi-Language Support
 - **English (`en`)** and **Turkish (`tr`)** language files included

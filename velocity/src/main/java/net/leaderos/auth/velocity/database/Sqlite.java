@@ -48,7 +48,8 @@ public class Sqlite extends Database {
         HikariConfig hikariConfig = new HikariConfig();
         hikariConfig.setJdbcUrl("jdbc:sqlite:" + dbFile.toString());
         hikariConfig.setMaximumPoolSize(1);
-        hikariConfig.setConnectionInitSql("PRAGMA foreign_keys = ON");
+        hikariConfig.setConnectionInitSql(
+                "PRAGMA foreign_keys = ON; PRAGMA synchronous = NORMAL; PRAGMA journal_mode = WAL;");
         dataSource = new HikariDataSource(hikariConfig);
 
         boolean success = executeStatement(replacePrefix(initPlayer));

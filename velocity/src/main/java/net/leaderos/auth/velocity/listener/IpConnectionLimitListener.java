@@ -31,6 +31,7 @@ public class IpConnectionLimitListener {
         // Atomically check and increment the connection count
         boolean[] denied = { false };
         ipConnections.compute(ip, (k, current) -> {
+            denied[0] = false;
             int count = current == null ? 0 : current;
             if (count >= maxPerIP) {
                 denied[0] = true;
