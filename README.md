@@ -13,7 +13,7 @@
 
 #### 🔐 Kimlik Doğrulama Sistemi
 - **Giriş / Kayıt / 2FA** — LeaderOS panel API ile entegre tam kimlik doğrulama akışı
-- **Oturum Desteği** — Oyuncular yeniden bağlandığında oturum açık kalabilir (yapılandırılabilir)
+- **Oturum Desteği** — Oyuncular yeniden bağlandığında otomatik olarak giriş yapmasını sağlayan güvenli geçişler (varsayılan: aktif)
 - **Şifre Doğrulama** — Minimum/maksimum şifre uzunluğu, güvensiz şifre kara listesi
 - **E-posta Doğrulama** — İsteğe bağlı e-posta doğrulama, kayıt sonrası atma desteği
 - **Yanlış Şifrede Atma** — Yapılandırılabilir yanlış şifre koruması
@@ -83,7 +83,7 @@
 | `/login <şifre>` | Şifre ile giriş yap |
 | `/register <şifre> <şifre/email>` | Yeni hesap oluştur |
 | `/tfa <kod>` | İki faktörlü doğrulama kodu gir |
-| `/leaderosauth reload` | Eklenti yapılandırmasını yeniden yükle |
+| `/losauthreload` | Yapılandırmayı ve veritabanı bağlantılarını yeniler, giriş yapmayanları atar (Sadece Bukkit) |
 | `/leaderosauth setspawn` | Auth spawn noktasını ayarla |
 
 **Komut Takma Adları:** `log`, `l`, `gir`, `giriş`, `reg`, `kaydol`, `kayıt`, `2fa`
@@ -96,7 +96,7 @@
 
 #### 🔐 Authentication System
 - **Login / Register / 2FA** — Full authentication flow integrated with the LeaderOS panel API
-- **Session Support** — Players can stay authenticated across reconnects (configurable)
+- **Session Support** — Securely keeps dynamic auth-sessions valid across server reconnects automatically (Enabled by default)
 - **Password Validation** — Minimum/maximum password length, unsafe password blacklist
 - **Email Verification** — Optional email verification with kick-after-register support
 - **Kick on Wrong Password** — Configurable wrong password kick protection
@@ -166,7 +166,7 @@
 | `/login <password>` | Login with password |
 | `/register <password> <password/email>` | Register a new account |
 | `/tfa <code>` | Enter two-factor authentication code |
-| `/leaderosauth reload` | Reload plugin configuration |
+| `/losauthreload` | Securely reloads config/DBs and kicks unauthenticated players (Bukkit Only) |
 | `/leaderosauth setspawn` | Set the auth spawn location |
 
 **Command Aliases:** `log`, `l`, `gir`, `giriş`, `reg`, `kaydol`, `kayıt`, `2fa`

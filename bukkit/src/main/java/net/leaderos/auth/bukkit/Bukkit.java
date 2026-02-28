@@ -78,29 +78,7 @@ public class Bukkit extends JavaPlugin {
 
         setupFiles();
 
-        boolean debug = getConfigFile().getSettings().getDatabase().isDebug();
-        String prefix = getConfigFile().getSettings().getDatabase().getPrefix();
-        if (getConfigFile().getSettings().getDatabase().getType().equalsIgnoreCase("MYSQL")) {
-            database = new Mysql(this, debug, prefix);
-        } else {
-            database = new Sqlite(this, debug, prefix);
-        }
-
-        if (!database.initialize()) {
-            getLogger().severe("Failed to initialize the database! Disabling plugin...");
-            getServer().getPluginManager().disablePlugin(this);
-            return;
-        }
-
-        int expirationTime = getConfigFile().getSettings().getDatabase().getExpirationTime();
-        if (expirationTime > 0) {
-            foliaLib.getScheduler().runAsync((task) -> {
-                int purged = database.purge(expirationTime);
-                if (purged > 0) {
-                    getLogger().info("Purged " + purged + " old IP records from the database.");
-                }
-            });
-        }
+        setupDatabase();
 
         altAccountManager = new AltAccountManager(this);
 
@@ -170,6 +148,32 @@ public class Bukkit extends JavaPlugin {
             getServer().getMessenger().unregisterIncomingPluginChannel(this, "BungeeCord", authMePluginMessageListener);
         }
         getServer().getMessenger().unregisterOutgoingPluginChannel(this, "BungeeCord");
+    }
+
+    public void setupDatabase() {
+        boolean debug = getConfigFile().getSettings().getDatabase().isDebug();
+        String prefix = getConfigFile().getSettings().getDatabase().getPrefix();
+        if (getConfigFile().getSettings().getDatabase().getType().equalsIgnoreCase("MYSQL")) {
+            database = new Mysql(this, debug, prefix);
+        } else {
+            database = new Sqlite(this, debug, prefix);
+        }
+
+        if (!database.initialize()) {
+            getLogger().severe("Failed to initialize the database! Disabling plugin...");
+            getServer().getPluginManager().disablePlugin(this);
+            return;
+        }
+
+        int expirationTime = getConfigFile().getSettings().getDatabase().getExpirationTime();
+        if (expirationTime > 0) {
+            foliaLib.getScheduler().runAsync((task) -> {
+                int purged = database.purge(expirationTime);
+                if (purged > 0) {
+                    getLogger().info("Purged " + purged + " old IP/Alt records from the database.");
+                }
+            });
+        }
     }
 
     public void setupFiles() {

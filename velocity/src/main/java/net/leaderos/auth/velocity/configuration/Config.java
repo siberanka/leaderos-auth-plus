@@ -58,7 +58,7 @@ public class Config extends OkaeriConfig {
                                 "Should session system be enabled?",
                                 "If enabled, players will be able to join the server without authentication if they succeeded an auth before (with the same IP)."
                 })
-                private boolean session = false;
+                private boolean session = true;
 
                 @Comment("Should unregistered players be kicked immediately?")
                 private boolean kickNonRegistered = false;
