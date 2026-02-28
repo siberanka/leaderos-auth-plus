@@ -153,6 +153,27 @@ public class Sqlite extends Database {
     }
 
     @Override
+    public List<String> getAltsByIp(String ip, int expirationTime) {
+        List<String> alts = new ArrayList<>();
+        Connection conn = getConnection();
+        if (conn == null)
+            return alts;
+        try (Connection connection = conn;
+                PreparedStatement statement = connection.prepareStatement(replacePrefix(getAltsByIp))) {
+            statement.setString(1, ip);
+            statement.setString(2, formatExpirationTime(expirationTime));
+            try (ResultSet resultSet = statement.executeQuery()) {
+                while (resultSet.next()) {
+                    alts.add(resultSet.getString("name"));
+                }
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return alts;
+    }
+
+    @Override
     public int deletePlayerAlts(String playerName) {
         String query = "DELETE FROM {prefix}iptable WHERE playerid = (SELECT id FROM {prefix}playertable WHERE name = ?);";
         int deleted = 0;

@@ -62,12 +62,21 @@ public abstract class Database {
     public abstract int purge(int expirationTime);
 
     /**
-     * Retrieves alt accounts by player name (for placeholders/commands).
+     * Retrieves alt accounts by player Name (for placeholders/commands).
      * 
      * @param playerName Name of the parameter to fetch alts for
      * @return Array list of names
      */
     public abstract List<String> getAltsByName(String playerName);
+
+    /**
+     * Retrieves the direct alt accounts recorded under a specific IP Address.
+     * 
+     * @param ip             The IP Address to check
+     * @param expirationTime The expiration time in days
+     * @return Array list of names connected to this IP
+     */
+    public abstract List<String> getAltsByIp(String ip, int expirationTime);
 
     /**
      * Deletes IP history for a given player name.

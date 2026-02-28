@@ -144,24 +144,29 @@ public class AltAccountManager {
             return false;
 
         int max = plugin.getConfigFile().getSettings().getRegisterLimit().getMaxAccountsPerIp();
-        int expTime = plugin.getConfigFile().getSettings().getDatabase().getExpirationTime();
 
-        // 1. Get entire linked network of alts recursively connected to this IP
-        List<String> knownAlts = plugin.getDatabase().getNetworkAltsByIp(ip, expTime);
-
-        // If the player is already a known alt in this network, bypass limit
-        if (knownAlts.contains(playerName)) {
-            return false;
-        }
-
-        // Limit Check A: Max registrations physically executed on this IP (legacy
-        // mechanism)
+        // Limit Check A: Max registrations physically executed on this IP (most
+        // reliable mechanism)
         if (plugin.getDatabase().hasReachedRegistrationLimit(ip, max)) {
             return true;
         }
 
+        int expTime = plugin.getConfigFile().getSettings().getDatabase().getExpirationTime();
+
+        // 1. Get entire linked network of alts recursively connected to this IP and IP
+        // history
+        List<String> knownAlts = plugin.getDatabase().getNetworkAltsByIp(ip, expTime);
+
         // Limit Check B: Total alt network exceeds limit
         if (knownAlts.size() >= max) {
+            // If the player is already a known alt on this network, bypass limit
+            // (e.g. account was deleted from web panel but history remains).
+            // Case-insensitive.
+            for (String alt : knownAlts) {
+                if (alt.equalsIgnoreCase(playerName)) {
+                    return false;
+                }
+            }
             return true;
         }
 

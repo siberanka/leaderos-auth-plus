@@ -24,6 +24,12 @@ public class IpConnectionLimitListener implements Listener {
         if (plugin.getConfigFile().getSettings().getMaxJoinPerIP() <= 0)
             return;
 
+        // Ignore if Spigot is operating behind a proxy
+        boolean isBungee = plugin.getServer().spigot().getConfig().getBoolean("settings.bungeecord", false);
+        if (isBungee) {
+            return;
+        }
+
         String ip = event.getAddress().getHostAddress();
         int maxPerIP = plugin.getConfigFile().getSettings().getMaxJoinPerIP();
 

@@ -86,13 +86,14 @@ public class AltAccountManager {
         }
     }
 
-    /**
-     * Checks if the given IP has reached the registration limit.
-     */
     public boolean hasReachedLimit(String ip) {
         if (!plugin.getConfigFile().getSettings().getRegisterLimit().isEnabled())
             return false;
+
         int max = plugin.getConfigFile().getSettings().getRegisterLimit().getMaxAccountsPerIp();
+        if (max <= 0)
+            return false;
+
         return plugin.getDatabase().hasReachedRegistrationLimit(ip, max);
     }
 
