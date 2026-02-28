@@ -107,7 +107,18 @@ public class RegisterCommand extends BaseCommand {
             // Registration Limit check (checks both direct IP registers and total network
             // alts)
             if (plugin.getAltAccountManager().hasReachedLimit(ip, player.getName())) {
-                ChatUtil.sendMessage(player, plugin.getLangFile().getMessages().getRegister().getRegisterLimit());
+                int expTime = plugin.getConfigFile().getSettings().getDatabase().getExpirationTime();
+                List<String> knownAlts = plugin.getDatabase().getNetworkAltsByIp(ip, expTime);
+                String altsString = knownAlts.isEmpty() ? "Yok" : String.join(", ", knownAlts);
+                String maxStr = String
+                        .valueOf(plugin.getConfigFile().getSettings().getRegisterLimit().getMaxAccountsPerIp());
+
+                String message = ChatUtil.replacePlaceholders(
+                        plugin.getLangFile().getMessages().getRegister().getRegisterLimit(),
+                        new Placeholder("{alts}", altsString),
+                        new Placeholder("{max}", maxStr),
+                        new Placeholder("{prefix}", plugin.getLangFile().getMessages().getPrefix()));
+                ChatUtil.sendMessage(player, message);
                 return;
             }
 
@@ -153,8 +164,17 @@ public class RegisterCommand extends BaseCommand {
                         ChatUtil.sendMessage(player,
                                 plugin.getLangFile().getMessages().getRegister().getAlreadyRegistered());
                     } else if (result.getError() == ErrorCode.REGISTER_LIMIT) {
-                        ChatUtil.sendMessage(player,
-                                plugin.getLangFile().getMessages().getRegister().getRegisterLimit());
+                        int expTime = plugin.getConfigFile().getSettings().getDatabase().getExpirationTime();
+                        List<String> knownAlts = plugin.getDatabase().getNetworkAltsByIp(ip, expTime);
+                        String altsString = knownAlts.isEmpty() ? "Web API" : String.join(", ", knownAlts);
+                        String maxStr = String
+                                .valueOf(plugin.getConfigFile().getSettings().getRegisterLimit().getMaxAccountsPerIp());
+                        String message = ChatUtil.replacePlaceholders(
+                                plugin.getLangFile().getMessages().getRegister().getRegisterLimit(),
+                                new Placeholder("{alts}", altsString),
+                                new Placeholder("{max}", maxStr),
+                                new Placeholder("{prefix}", plugin.getLangFile().getMessages().getPrefix()));
+                        ChatUtil.sendMessage(player, message);
                     } else if (result.getError() == ErrorCode.INVALID_USERNAME) {
                         ChatUtil.sendMessage(player, plugin.getLangFile().getMessages().getRegister().getInvalidName());
                     } else if (result.getError() == ErrorCode.INVALID_EMAIL) {

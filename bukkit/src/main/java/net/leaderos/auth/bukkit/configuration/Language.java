@@ -116,7 +116,7 @@ public class Language extends OkaeriConfig {
 
             private String emailInUse = "{prefix} &cThis email is already in use!";
 
-            private String registerLimit = "{prefix} &cİzin verilen maksimum kayıt sayısına ulaştınız!";
+            private String registerLimit = "{prefix} &cİzin verilen maksimum kayıt sayısına ulaştınız! &7({alts}) &8[Maks: {max}]";
 
             private String success = "{prefix} &aYou have successfully registered!";
 

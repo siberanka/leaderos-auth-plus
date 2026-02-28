@@ -145,6 +145,10 @@ public class AltAccountManager {
 
         int max = plugin.getConfigFile().getSettings().getRegisterLimit().getMaxAccountsPerIp();
 
+        if (max <= 0) {
+            return false;
+        }
+
         // Limit Check A: Max registrations physically executed on this IP (most
         // reliable mechanism)
         if (plugin.getDatabase().hasReachedRegistrationLimit(ip, max)) {
