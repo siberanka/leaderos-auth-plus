@@ -259,8 +259,18 @@ public class Bukkit extends JavaPlugin {
 
     public void sendPlayerToServer(Player player, String server) {
         ByteArrayDataOutput out = ByteStreams.newDataOutput();
-        out.writeUTF("Connect");
-        out.writeUTF(server);
+        out.writeUTF("Forward");
+        out.writeUTF("ONLINE");
+        out.writeUTF("losauth:connect");
+
+        ByteArrayDataOutput dataOut = ByteStreams.newDataOutput();
+        dataOut.writeUTF(player.getName());
+        dataOut.writeUTF(server);
+
+        byte[] dataBytes = dataOut.toByteArray();
+        out.writeShort(dataBytes.length);
+        out.write(dataBytes);
+
         player.sendPluginMessage(this, "BungeeCord", out.toByteArray());
     }
 

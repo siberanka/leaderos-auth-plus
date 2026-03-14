@@ -99,6 +99,11 @@ public class Velocity {
     private Database database;
     @Getter
     private AltAccountManager altAccountManager;
+    /**
+     * Map of authenticated players
+     */
+    @Getter
+    private final java.util.Map<String, Boolean> authenticatedPlayers = new java.util.concurrent.ConcurrentHashMap<>();
 
     /**
      * Constructor of main class
@@ -156,6 +161,10 @@ public class Velocity {
 
         this.server.getEventManager().register(this, new ConnectionListener(this));
         this.server.getEventManager().register(this, new IpConnectionLimitListener(this));
+
+        // Register plugin message channel
+        this.server.getChannelRegistrar().register(com.velocitypowered.api.proxy.messages.MinecraftChannelIdentifier.from("BungeeCord"));
+        this.server.getEventManager().register(this, new net.leaderos.auth.velocity.listener.PluginMessageListener(this));
 
         // Initialize database for alt account tracking
         setupDatabase();

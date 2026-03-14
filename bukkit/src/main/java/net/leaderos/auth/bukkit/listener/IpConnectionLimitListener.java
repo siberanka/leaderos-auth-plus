@@ -17,6 +17,7 @@ import java.util.concurrent.ConcurrentHashMap;
 public class IpConnectionLimitListener implements Listener {
     private final Bukkit plugin;
     private final Map<String, Integer> ipConnections = new ConcurrentHashMap<>();
+    private final Map<String, Long> lastJoinTime = new ConcurrentHashMap<>();
 
     @EventHandler(priority = EventPriority.HIGHEST)
     public void onJoin(AsyncPlayerPreLoginEvent event) {
@@ -33,16 +34,40 @@ public class IpConnectionLimitListener implements Listener {
         String ip = event.getAddress().getHostAddress();
         int maxPerIP = plugin.getConfigFile().getSettings().getMaxJoinPerIP();
 
-        // Atomically check and increment the connection count
+        // Atomically check and verify the connection count
         boolean[] denied = { false };
         ipConnections.compute(ip, (k, current) -> {
-            denied[0] = false; // Fix CAS retry state leak
             int count = current == null ? 0 : current;
-            if (count >= maxPerIP) {
-                denied[0] = true;
-                return current; // Don't increment
+            long now = System.currentTimeMillis();
+            long last = lastJoinTime.getOrDefault(ip, 0L);
+
+            // If count is within limit, just increment (O(1) operation)
+            if (count < maxPerIP) {
+                lastJoinTime.put(ip, now);
+                return count + 1;
             }
-            return count + 1;
+
+            // Limit reached? Check if we are in the "strict window" to prevent race condition bypass
+            if (now - last > 3000) {
+                // Window expired, we can trust a new scan to self-heal
+                long actualOnlineCount = plugin.getServer().getOnlinePlayers().stream()
+                        .filter(p -> p.getAddress().getAddress().getHostAddress().equals(ip))
+                        .count();
+
+                if (actualOnlineCount < maxPerIP) {
+                    // It was a leak! Allow the connection.
+                    lastJoinTime.put(ip, now);
+                    return (int) actualOnlineCount + 1;
+                }
+                
+                // Still over limit
+                denied[0] = true;
+                return (int) actualOnlineCount; // Sync map with reality
+            }
+
+            // Inside strict window: Deny immediately to prevent simultaneous join bypass
+            denied[0] = true;
+            return count;
         });
 
         if (denied[0]) {
@@ -60,6 +85,12 @@ public class IpConnectionLimitListener implements Listener {
 
         // Decrease the connection count for the IP
         String ip = event.getPlayer().getAddress().getAddress().getHostAddress();
-        ipConnections.computeIfPresent(ip, (k, v) -> v > 1 ? v - 1 : null);
+        ipConnections.computeIfPresent(ip, (k, v) -> {
+            if (v <= 1) {
+                lastJoinTime.remove(ip);
+                return null;
+            }
+            return v - 1;
+        });
     }
 }

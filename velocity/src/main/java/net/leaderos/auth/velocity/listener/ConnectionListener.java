@@ -109,6 +109,32 @@ public class ConnectionListener {
         });
     }
 
+    @Subscribe
+    public void onServerConnect(com.velocitypowered.api.event.player.ServerPreConnectEvent event) {
+        Player player = event.getPlayer();
+        
+        // If already authenticated, allow any connection
+        if (plugin.getAuthenticatedPlayers().getOrDefault(player.getUsername(), false))
+            return;
+
+        // Limbo server check (allow connecting to limbo/auth lobby)
+        // Note: For Velocity, we check if they are already in Limbo or moving to a server.
+        // If they are not authenticated, they should only be allowed to stay in limbo.
+        // LimboAPI handles the initial spawn. We just need to prevent /server moves.
+        if (event.getResult().getServer().isPresent()) {
+            // If they are not authenticated, don't let them move away from wherever they are 
+            // unless it's the auth process directing them.
+            // However, velocity redirection usually happens via disconnecting from limbo.
+            // Let's ensure they can't manually /server.
+            event.setResult(com.velocitypowered.api.event.player.ServerPreConnectEvent.ServerResult.denied());
+        }
+    }
+
+    @Subscribe
+    public void onDisconnect(com.velocitypowered.api.event.connection.DisconnectEvent event) {
+        plugin.getAuthenticatedPlayers().remove(event.getPlayer().getUsername());
+    }
+
     private void kickPlayer(Player player, List<String> kickMessage) {
         String playerName = player.getUsername();
         Shared.getDebugAPI().send("Player " + playerName + " is being kicked.", false);

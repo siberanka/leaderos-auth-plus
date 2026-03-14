@@ -56,7 +56,7 @@ public class PlayerListener implements Listener {
         event.setCancelled(true);
     }
 
-    @EventHandler
+    @EventHandler(priority = (byte) 127)
     public void onConnect(ServerConnectEvent event) {
         ProxiedPlayer player = event.getPlayer();
         if (plugin.getAuthenticatedPlayers().getOrDefault(player.getName(), false))
