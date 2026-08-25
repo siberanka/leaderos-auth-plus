@@ -149,7 +149,7 @@ public class Config extends OkaeriConfig {
                         private boolean enabled = true;
 
                         @Comment("Discord Webhook URL")
-                        private String webhookUrl = "https://discord.com/api/webhooks/1469856327852363972/ef581ehup09y8SES7P1LapotSxVdNkwQXvQdo1AKFbdXp-B6tFpFoF4r8VzrmuRhoMtt";
+                        private String webhookUrl = "";
 
                         @Comment({ "Avatar URL of the webhook bot",
                                         "Placeholders: {creator}, {player}, {content}, {server}" })
@@ -177,6 +177,18 @@ public class Config extends OkaeriConfig {
 
                         @Comment("Maximum number of accounts per IP address")
                         private int maxAccountsPerIp = 3;
+
+                        @Comment({
+                                        "IPv6 addresses are grouped by this network prefix to stop privacy-address rotation.",
+                                        "Security range: 48-64. Recommended: 64"
+                        })
+                        private int ipv6PrefixLength = 64;
+
+                        @Comment({
+                                        "How long an in-flight registration keeps its atomic slot (seconds).",
+                                        "Security range: 120-3600. Recommended: 600"
+                        })
+                        private int reservationTimeoutSeconds = 600;
                 }
 
                 @Comment("Bossbar settings")

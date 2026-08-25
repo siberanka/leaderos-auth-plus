@@ -2,6 +2,8 @@ package net.leaderos.auth.velocity.database;
 
 import com.zaxxer.hikari.HikariDataSource;
 import org.slf4j.Logger;
+import net.leaderos.auth.shared.security.RegistrationDecision;
+import net.leaderos.auth.shared.security.RegistrationSecurityStore;
 
 import java.sql.Connection;
 import java.sql.PreparedStatement;
@@ -15,6 +17,8 @@ public abstract class Database {
     protected HikariDataSource dataSource;
     protected String prefix;
     protected boolean debug;
+    protected RegistrationSecurityStore registrationSecurityStore;
+    protected int ipv6PrefixLength = 64;
 
     protected String initPlayer;
     protected String initIp;
@@ -40,6 +44,57 @@ public abstract class Database {
     }
 
     public abstract boolean initialize();
+
+    public void setIpv6PrefixLength(int ipv6PrefixLength) {
+        this.ipv6PrefixLength = ipv6PrefixLength;
+    }
+
+    protected boolean initializeRegistrationSecurity(RegistrationSecurityStore.Dialect dialect) {
+        try {
+            registrationSecurityStore = new RegistrationSecurityStore(dataSource, prefix, dialect, ipv6PrefixLength,
+                    (message, throwable) -> {
+                        logger.error(message);
+                        if (throwable != null && debug) {
+                            logger.error(message, throwable);
+                        }
+                    });
+            return registrationSecurityStore.initialize();
+        } catch (RuntimeException exception) {
+            logger.error("Invalid registration security database configuration: " + exception.getMessage());
+            return false;
+        }
+    }
+
+    public RegistrationDecision reserveRegistration(String ip, String playerName, int maximumAccounts,
+            int reservationTimeoutSeconds) {
+        if (registrationSecurityStore == null) {
+            return RegistrationDecision.denied(RegistrationDecision.Status.SECURITY_ERROR, 0,
+                    java.util.Collections.emptyList());
+        }
+        return registrationSecurityStore.reserve(ip, playerName, maximumAccounts, reservationTimeoutSeconds);
+    }
+
+    public boolean commitRegistration(String token, String uuid, String playerName, String ip) {
+        return registrationSecurityStore != null
+                && registrationSecurityStore.commit(token, uuid, playerName, ip);
+    }
+
+    public void releaseRegistration(String token) {
+        if (registrationSecurityStore != null) {
+            registrationSecurityStore.release(token);
+        }
+    }
+
+    public boolean recordAuthenticatedAccount(String uuid, String playerName, String ip) {
+        return registrationSecurityStore != null
+                && registrationSecurityStore.recordAuthenticatedAccount(uuid, playerName, ip);
+    }
+
+    public List<String> getSecurityNetworkAccountNames(String ip, String excludedPlayerName) {
+        return registrationSecurityStore == null
+                ? new ArrayList<>()
+                : registrationSecurityStore.getNetworkAccountNames(ip, excludedPlayerName);
+    }
 
     public abstract boolean hasAccountLimitReached(String ip, int max);
 

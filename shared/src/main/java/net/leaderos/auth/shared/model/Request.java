@@ -22,6 +22,9 @@ import java.util.Map;
  */
 public abstract class Request {
 
+    private static final int CONNECT_TIMEOUT_MILLIS = 10_000;
+    private static final int READ_TIMEOUT_MILLIS = 30_000;
+
     /**
      * body of request
      */
@@ -61,6 +64,8 @@ public abstract class Request {
         this.url = new URL(Shared.getLink() + "/api/" + api);
         this.apiKey = Shared.getApiKey();
         this.connection = (HttpURLConnection) this.url.openConnection();
+        this.connection.setConnectTimeout(CONNECT_TIMEOUT_MILLIS);
+        this.connection.setReadTimeout(READ_TIMEOUT_MILLIS);
         // Request type selector
         connection.setRequestMethod(type.name().toUpperCase());
 

@@ -20,6 +20,7 @@ import net.leaderos.auth.shared.helpers.AuthUtil;
 import net.leaderos.auth.shared.helpers.Placeholder;
 import net.leaderos.auth.shared.helpers.UserAgentUtil;
 import net.leaderos.auth.shared.model.response.GameSessionResponse;
+import net.leaderos.auth.shared.security.RegistrationDecision;
 
 import java.time.Duration;
 import java.util.concurrent.ScheduledFuture;
@@ -339,14 +340,31 @@ public class AuthSessionHandler implements LimboSessionHandler {
             String email = secondArgType == RegisterSecondArg.EMAIL ? secondArg : null;
             String userAgent = UserAgentUtil.generateUserAgent(!plugin.getConfigFile().getSettings().isSession());
 
+            RegistrationDecision registrationDecision = plugin.getAltAccountManager()
+                    .reserveRegistration(ip, proxyPlayer.getUsername());
+            if (!registrationDecision.isAllowed()) {
+                ChatUtil.sendMessage(proxyPlayer,
+                        plugin.getLangFile().getMessages().getRegister().getRegisterLimit());
+                return;
+            }
+
             AuthUtil.register(proxyPlayer.getUsername(), password, email, ip, userAgent).whenComplete((result, ex) -> {
                 if (ex != null) {
+                    plugin.getAltAccountManager().cancelRegistration(
+                            registrationDecision.getReservationToken());
                     ex.printStackTrace();
                     ChatUtil.sendMessage(proxyPlayer, plugin.getLangFile().getMessages().getAnErrorOccurred());
                     return;
                 }
 
                 if (result.isStatus()) {
+                    if (!plugin.getAltAccountManager().completeRegistration(
+                            registrationDecision.getReservationToken(), proxyPlayer, ip)) {
+                        plugin.getLogger().error("Registration succeeded remotely but its security record "
+                                + "could not be committed for " + proxyPlayer.getUsername() + ".");
+                    }
+                    plugin.getAltAccountManager().processPlayerRecord(proxyPlayer, ip);
+
                     // Kick the player if email verification is required
                     if (result.isEmailVerificationRequired()
                             && plugin.getConfigFile().getSettings().getEmailVerification().isKickAfterRegister()) {
@@ -366,32 +384,31 @@ public class AuthSessionHandler implements LimboSessionHandler {
                     ChatUtil.sendMessage(proxyPlayer, plugin.getLangFile().getMessages().getRegister().getSuccess());
                     ChatUtil.sendConsoleInfo(proxyPlayer.getUsername() + " has registered successfully.");
 
-                    // Alt account tracking
-                    if (plugin.getAltAccountManager() != null) {
-                        plugin.getAltAccountManager().processPlayerRecord(proxyPlayer, ip);
-                        plugin.getAltAccountManager().incrementRegistration(ip);
-                    }
-
                     this.limboPlayer.getScheduledExecutor().schedule(() -> this.limboPlayer.disconnect(), 500,
                             TimeUnit.MILLISECONDS);
-                } else if (result.getError() == ErrorCode.USERNAME_ALREADY_EXIST) {
+                } else {
+                    plugin.getAltAccountManager().cancelRegistration(
+                            registrationDecision.getReservationToken());
+                }
+
+                if (!result.isStatus() && result.getError() == ErrorCode.USERNAME_ALREADY_EXIST) {
                     ChatUtil.sendMessage(proxyPlayer,
                             plugin.getLangFile().getMessages().getRegister().getAlreadyRegistered());
-                } else if (result.getError() == ErrorCode.REGISTER_LIMIT) {
+                } else if (!result.isStatus() && result.getError() == ErrorCode.REGISTER_LIMIT) {
                     ChatUtil.sendMessage(proxyPlayer,
                             plugin.getLangFile().getMessages().getRegister().getRegisterLimit());
-                } else if (result.getError() == ErrorCode.INVALID_USERNAME) {
+                } else if (!result.isStatus() && result.getError() == ErrorCode.INVALID_USERNAME) {
                     ChatUtil.sendMessage(proxyPlayer,
                             plugin.getLangFile().getMessages().getRegister().getInvalidName());
-                } else if (result.getError() == ErrorCode.INVALID_EMAIL) {
+                } else if (!result.isStatus() && result.getError() == ErrorCode.INVALID_EMAIL) {
                     ChatUtil.sendMessage(proxyPlayer,
                             plugin.getLangFile().getMessages().getRegister().getInvalidEmail());
-                } else if (result.getError() == ErrorCode.EMAIL_ALREADY_EXIST) {
+                } else if (!result.isStatus() && result.getError() == ErrorCode.EMAIL_ALREADY_EXIST) {
                     ChatUtil.sendMessage(proxyPlayer, plugin.getLangFile().getMessages().getRegister().getEmailInUse());
-                } else if (result.getError() == ErrorCode.INVALID_PASSWORD) {
+                } else if (!result.isStatus() && result.getError() == ErrorCode.INVALID_PASSWORD) {
                     ChatUtil.sendMessage(proxyPlayer,
                             plugin.getLangFile().getMessages().getRegister().getInvalidPassword());
-                } else {
+                } else if (!result.isStatus()) {
                     Shared.getDebugAPI().send("An unexpected error occurred during register: " + result, true);
                     ChatUtil.sendMessage(proxyPlayer, plugin.getLangFile().getMessages().getAnErrorOccurred());
                 }

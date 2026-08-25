@@ -10,6 +10,7 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
+import net.leaderos.auth.shared.security.RegistrationSecurityStore;
 
 public class Mysql extends Database {
 
@@ -43,6 +44,7 @@ public class Mysql extends Database {
     @Override
     public boolean initialize() {
         HikariConfig hikariConfig = new HikariConfig();
+        hikariConfig.setDriverClassName("com.mysql.cj.jdbc.Driver");
         hikariConfig.setJdbcUrl("jdbc:mysql://" + hostname + ":" + port + "/" + database + jdbcProperties);
         hikariConfig.setUsername(username);
         hikariConfig.setPassword(password);
@@ -65,7 +67,7 @@ public class Mysql extends Database {
         if (!success)
             return false;
 
-        return true;
+        return initializeRegistrationSecurity(RegistrationSecurityStore.Dialect.MYSQL);
     }
 
     @Override

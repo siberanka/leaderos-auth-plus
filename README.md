@@ -2,7 +2,7 @@
 
 **Minecraft sunucuları için LeaderOS panel kimlik doğrulama eklentisi.** **Bukkit/Spigot/Paper/Folia**, **BungeeCord** ve **Velocity** proxy sunucularını destekler.
 
-> **Sürüm:** 1.0.5-fork  
+> **Sürüm:** 1.0.6-siberanka
 > **Yazarlar:** leaderos, efekurbann, siberanka
 
 ---
@@ -31,7 +31,7 @@
 - **Komut Engelleme** — Giriş yapmamış oyuncular yalnızca kimlik doğrulama komutlarını kullanabilir
 - **Tab-Complete Gizleme** — Giriş yapmamış oyunculara sadece auth komutları gösterilir, namespace'li komutlar da filtrelenir (Bukkit 1.13+, BungeeCord)
 - **Komut Cooldown** — Giriş yapmamış oyuncular için komut spam koruması (Bukkit, Velocity)
-- **Gelişmiş Yan Hesap Takibi** — Oyuncunun IP adresi değişse dahi donanım/hesap eşleşmeleriyle yan hesap (alt-account) tespit edilir; çoklu hesap kullanımları loglanır ve anlık olarak Discord'a (Webhook) bildirim gönderilir
+- **Gelişmiş Yan Hesap Takibi** — Oyuncunun geçmişte kullandığı hesap–IP ilişkilerini tam ve geçişli bir grafik olarak izler; ilişkili ağlardaki çoklu hesap kullanımları loglanır ve Discord'a (Webhook) bildirilebilir
 - **Eylem Engelleme** — Giriş yapmamış oyuncular hareket edemez, sohbet edemez, etkileşimde bulunamaz, blok kırıp/koyamaz
 - **Anti-Bot** — IP tabanlı bağlantı sınırlaması bot saldırılarını önlemeye yardımcı olur
 - **Kullanıcı Adı Doğrulama** — Büyük/küçük harf uyumsuzluğu tespiti ve geçersiz kullanıcı adı engelleme
@@ -68,9 +68,9 @@
 ### Kurulum
 
 1. Platformunuza uygun JAR dosyasını indirin:
-   - `leaderos-auth-bukkit-1.0.5-fork.jar` — Bukkit/Spigot/Paper/Folia
-   - `leaderos-auth-bungee-1.0.5-fork.jar` — BungeeCord
-   - `leaderos-auth-velocity-1.0.5-fork.jar` — Velocity (LimboAPI gerektirir)
+   - `leaderos-auth-bukkit-1.0.6-siberanka.jar` — Bukkit/Spigot/Paper/Folia
+   - `leaderos-auth-bungee-1.0.6-siberanka.jar` — BungeeCord
+   - `leaderos-auth-velocity-1.0.6-siberanka.jar` — Velocity (LimboAPI gerektirir)
 2. JAR dosyasını sunucunuzun `plugins/` dizinine yerleştirin
 3. Sunucuyu başlatarak yapılandırma dosyalarını oluşturun
 4. `config.yml` dosyasını LeaderOS panel URL'niz ve API anahtarınızla düzenleyin
@@ -114,7 +114,7 @@
 - **Command Blocking** — Only authentication commands are allowed for unauthenticated players
 - **Tab-Complete Hiding** — Hides all commands from tab-completion except auth commands, including namespaced commands (Bukkit 1.13+, BungeeCord)
 - **Command Cooldown** — Rate-limiting for unauthenticated player commands to prevent API flooding (Bukkit, Velocity)
-- **Advanced Alt Account Tracking** — Detects multi-account/alt-account usage even if the player changes their IP address; all suspicious activities are logged and instantly forwarded to Discord via Webhooks
+- **Advanced Alt Account Tracking** — Tracks historical account–IP relationships as a complete transitive graph; linked-network activity is logged and can be forwarded to Discord via Webhooks
 - **Action Blocking** — Unauthenticated players cannot move, chat, interact, break/place blocks, open inventories, or perform any action
 - **Anti-Bot** — IP-based connection limiting helps prevent bot attacks
 - **Username Validation** — Username case mismatch detection and invalid username blocking
@@ -151,9 +151,9 @@
 ### Installation
 
 1. Download the appropriate JAR for your platform:
-   - `leaderos-auth-bukkit-1.0.5-fork.jar` for Bukkit/Spigot/Paper/Folia
-   - `leaderos-auth-bungee-1.0.5-fork.jar` for BungeeCord
-   - `leaderos-auth-velocity-1.0.5-fork.jar` for Velocity (requires LimboAPI)
+   - `leaderos-auth-bukkit-1.0.6-siberanka.jar` for Bukkit/Spigot/Paper/Folia
+   - `leaderos-auth-bungee-1.0.6-siberanka.jar` for BungeeCord
+   - `leaderos-auth-velocity-1.0.6-siberanka.jar` for Velocity (requires LimboAPI)
 2. Place the JAR in your server's `plugins/` directory
 3. Start the server to generate config files
 4. Edit `config.yml` with your LeaderOS panel URL and API key
@@ -231,6 +231,8 @@ settings:
   register-limit:
     enabled: true
     max-accounts-per-ip: 3
+    ipv6-prefix-length: 64
+    reservation-timeout-seconds: 600
 
   # Veritabanı bağlantı ayarları / Database Connection settings (SQLITE or MYSQL)
   database:
@@ -250,6 +252,17 @@ settings:
     - "password"
     - "qwerty"
 ```
+
+### Kayıt güvenliği modeli / Registration security model
+
+- Kayıt hakkı uzak API çağrısından **önce**, SQLite veya MySQL üzerinde tek transaction içinde ayrılır. Aynı anda gönderilen komutlar/formlar bekleyen kayıtları da saydığı için klasik “kontrol et, sonra artır” yarışını kullanamaz.
+- Limit yalnızca o anki IP'yi değil, geçmişte ortak IP kullanmış hesapların tüm geçişli hesap–IP ağını sayar. IPv6 gizlilik adresleri varsayılan olarak `/64` ağında gruplanır.
+- Başarılı her giriş güvenlik grafiğine yazılır. Bu geçmiş; Discord bildiriminin kapatılmasından, muafiyet izninden ve bildirim verisi için kullanılan `expiration-time` ayarından bağımsızdır.
+- Hatalı limit, IPv6 öneki, rezervasyon süresi, veritabanı türü/portu ve tablo öneki güvenli aralığa zorlanır. Limit etkinse veritabanı hatasında kayıt **fail-closed** olarak reddedilir.
+- Eski `playertable`, `iptable` ve `registrationtable` verileri ilk açılışta idempotent biçimde yeni güvenlik şemasına aktarılır.
+- Bu mekanizma donanım parmak izi toplamaz. Hiçbir hesabı veya IP ağıyla ilişki kurmamış tamamen yeni bir bağlantıyı Minecraft protokolü üzerinden güvenilir biçimde aynı kişiye bağlamak mümkün değildir. Proxy arkasında gerçek istemci IP'sinin güvenli forwarding ile sunucuya ulaştığından emin olun.
+
+The limiter atomically reserves a slot before the remote API call, counts pending attempts, follows the complete historical account–IP graph, groups rotating IPv6 addresses, migrates legacy data, and denies registration on storage/security errors. It intentionally does not claim hardware fingerprinting; reliable proxy IP forwarding remains an operator requirement.
 
 ### BungeeCord `config.yml`
 
@@ -289,14 +302,14 @@ settings:
 ## Derleme / Building from Source
 
 ```bash
-# Gereksinimler / Requirements: Java 8+, Maven 3.6+
+# Tüm modüller için derleme gereksinimleri / Full-reactor build requirements: JDK 12+, Maven 3.6+
 mvn clean package -DskipTests
 ```
 
 Çıktı / Output JARs:
-- `bukkit/target/leaderos-auth-bukkit-1.0.5-fork.jar`
-- `bungee/target/leaderos-auth-bungee-1.0.5-fork.jar`
-- `velocity/target/leaderos-auth-velocity-1.0.5-fork.jar`
+- `bukkit/target/leaderos-auth-bukkit-1.0.6-siberanka.jar`
+- `bungee/target/leaderos-auth-bungee-1.0.6-siberanka.jar`
+- `velocity/target/leaderos-auth-velocity-1.0.6-siberanka.jar`
 
 ---
 

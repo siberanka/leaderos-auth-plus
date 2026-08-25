@@ -10,7 +10,7 @@
     </parent>
 
     <artifactId>leaderos-auth-bungee</artifactId>
-    <version>${shared.version}</version>
+    <version>1.0.6-siberanka</version>
     <packaging>jar</packaging>
 
     <properties>

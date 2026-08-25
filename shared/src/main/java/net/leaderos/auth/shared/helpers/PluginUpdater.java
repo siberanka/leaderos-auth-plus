@@ -26,6 +26,8 @@ public class PluginUpdater {
     public boolean checkForUpdates() throws Exception {
         HttpURLConnection connection = (HttpURLConnection) url.openConnection();
 
+        connection.setConnectTimeout(10_000);
+        connection.setReadTimeout(30_000);
         connection.setRequestMethod("GET");
 
         BufferedReader in = new BufferedReader(new InputStreamReader(connection.getInputStream()));

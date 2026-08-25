@@ -2,9 +2,11 @@ package net.leaderos.auth.bukkit.helpers;
 
 import net.leaderos.auth.bukkit.Bukkit;
 import net.leaderos.auth.bukkit.configuration.Language;
+import net.leaderos.auth.bukkit.configuration.Config;
 import org.bukkit.ChatColor;
 import org.bukkit.entity.Player;
 import org.bukkit.metadata.MetadataValue;
+import net.leaderos.auth.shared.security.RegistrationDecision;
 
 import java.util.List;
 import java.util.stream.Collectors;
@@ -31,25 +33,33 @@ public class AltAccountManager {
         if (ip == null || ip.isEmpty())
             return;
 
-        // Skip if alt logger is disabled
-        if (!plugin.getConfigFile().getSettings().getAltTracker().isEnabled()) {
+        if (plugin.getDatabase() == null) {
             return;
         }
 
-        // Skip if player is exempt
-        if (player.hasPermission("leaderos.auth.alt.exempt")) {
+        if (!plugin.getConfigFile().getSettings().getRegisterLimit().isEnabled()
+                && !plugin.getConfigFile().getSettings().getAltTracker().isEnabled()) {
             return;
         }
 
-        plugin.getServer().getScheduler().runTaskAsynchronously(plugin, () -> {
-            String uuid = player.getUniqueId().toString();
-            String name = player.getName();
+        final String uuid = player.getUniqueId().toString();
+        final String name = player.getName();
+        final boolean notificationsEnabled = plugin.getConfigFile().getSettings().getAltTracker().isEnabled()
+                && !player.hasPermission("leaderos.auth.alt.exempt");
+
+        plugin.getFoliaLib().getScheduler().runAsync((task) -> {
+            // Security history must never depend on notification settings or bypass
+            // permissions. This link is what stops IP rotation from resetting the limit.
+            plugin.getDatabase().recordAuthenticatedAccount(uuid, name, ip);
+
+            if (!notificationsEnabled) {
+                return;
+            }
 
             plugin.getDatabase().addOrUpdatePlayer(uuid, name);
             plugin.getDatabase().addOrUpdateIp(ip, uuid);
 
-            int expirationTime = plugin.getConfigFile().getSettings().getDatabase().getExpirationTime();
-            List<String> accounts = plugin.getDatabase().getAltNames(uuid, expirationTime);
+            List<String> accounts = plugin.getDatabase().getSecurityNetworkAccountNames(ip, name);
             if (!accounts.isEmpty()) {
                 Language.Messages.Alt altConfig = plugin.getLangFile().getMessages().getAlt();
 
@@ -74,7 +84,7 @@ public class AltAccountManager {
                 webhook.sendAltMessage(cleanNotify, player);
 
                 // Back to main thread for notifying online players
-                plugin.getServer().getScheduler().runTask(plugin, () -> {
+                plugin.getFoliaLib().getScheduler().runNextTick((notifyTask) -> {
                     String coloredMsg = ChatColor.translateAlternateColorCodes('&', notifyStr);
 
                     // Log to console
@@ -124,57 +134,38 @@ public class AltAccountManager {
         return false;
     }
 
-    /**
-     * Increments the registration count for the given IP and saves the config.
-     */
-    public void incrementRegistration(String ip) {
-        if (plugin.getConfigFile().getSettings().getRegisterLimit().isEnabled()) {
-            plugin.getDatabase().incrementRegistration(ip);
+    public RegistrationDecision reserveRegistration(String ip, String playerName) {
+        Config.Settings.RegisterLimit limit = plugin.getConfigFile().getSettings().getRegisterLimit();
+        if (!limit.isEnabled()) {
+            return RegistrationDecision.allowed(null, 0, java.util.Collections.emptyList());
         }
+        if (plugin.getDatabase() == null) {
+            return RegistrationDecision.denied(RegistrationDecision.Status.SECURITY_ERROR, 0,
+                    java.util.Collections.emptyList());
+        }
+        return plugin.getDatabase().reserveRegistration(ip, playerName,
+                limit.getMaxAccountsPerIp(), limit.getReservationTimeoutSeconds());
     }
 
-    /**
-     * Checks if the given IP or its linked alt network has reached the registration
-     * limit.
-     * Prevents IP-bypassing if the new IP is already linked to previous accounts.
-     * Always allows if the player name is an existing alt in the network.
-     */
-    public boolean hasReachedLimit(String ip, String playerName) {
-        if (!plugin.getConfigFile().getSettings().getRegisterLimit().isEnabled())
-            return false;
-
-        int max = plugin.getConfigFile().getSettings().getRegisterLimit().getMaxAccountsPerIp();
-
-        if (max <= 0) {
-            return false;
-        }
-
-        // Limit Check A: Max registrations physically executed on this IP (most
-        // reliable mechanism)
-        if (plugin.getDatabase().hasReachedRegistrationLimit(ip, max)) {
+    public boolean completeRegistration(String token, Player player, String ip) {
+        if (token == null && !plugin.getConfigFile().getSettings().getAltTracker().isEnabled()) {
             return true;
         }
-
-        int expTime = plugin.getConfigFile().getSettings().getDatabase().getExpirationTime();
-
-        // 1. Get entire linked network of alts recursively connected to this IP and IP
-        // history
-        List<String> knownAlts = plugin.getDatabase().getNetworkAltsByIp(ip, expTime);
-
-        // Limit Check B: Total alt network exceeds limit
-        if (knownAlts.size() >= max) {
-            // If the player is already a known alt on this network, bypass limit
-            // (e.g. account was deleted from web panel but history remains).
-            // Case-insensitive.
-            for (String alt : knownAlts) {
-                if (alt.equalsIgnoreCase(playerName)) {
-                    return false;
-                }
-            }
-            return true;
+        if (plugin.getDatabase() == null) {
+            return false;
         }
+        if (token == null) {
+            return plugin.getDatabase().recordAuthenticatedAccount(
+                    player.getUniqueId().toString(), player.getName(), ip);
+        }
+        return plugin.getDatabase().commitRegistration(token,
+                player.getUniqueId().toString(), player.getName(), ip);
+    }
 
-        return false;
+    public void cancelRegistration(String token) {
+        if (plugin.getDatabase() != null) {
+            plugin.getDatabase().releaseRegistration(token);
+        }
     }
 
     public DiscordWebhook getWebhook() {

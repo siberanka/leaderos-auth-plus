@@ -12,6 +12,7 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
+import net.leaderos.auth.shared.security.RegistrationSecurityStore;
 
 public class Sqlite extends Database {
     protected String initPlayer;
@@ -60,6 +61,7 @@ public class Sqlite extends Database {
         dbFilename = dbFile.toString();
 
         HikariConfig hikariConfig = new HikariConfig();
+        hikariConfig.setDriverClassName("org.sqlite.JDBC");
         hikariConfig.setJdbcUrl("jdbc:sqlite:" + dbFilename);
         hikariConfig.setMaximumPoolSize(1);
         hikariConfig.setConnectionInitSql(
@@ -82,7 +84,7 @@ public class Sqlite extends Database {
         if (!success)
             return false;
 
-        return true;
+        return initializeRegistrationSecurity(RegistrationSecurityStore.Dialect.SQLITE);
     }
 
     @Override

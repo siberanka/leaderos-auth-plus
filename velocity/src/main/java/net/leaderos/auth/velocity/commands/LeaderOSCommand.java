@@ -4,8 +4,6 @@ import com.velocitypowered.api.command.CommandSource;
 import com.velocitypowered.api.command.SimpleCommand;
 import net.leaderos.auth.velocity.Velocity;
 import net.leaderos.auth.velocity.helpers.ChatUtil;
-import net.leaderos.auth.shared.Shared;
-import net.leaderos.auth.shared.helpers.UrlUtil;
 
 public class LeaderOSCommand implements SimpleCommand {
 
@@ -14,11 +12,7 @@ public class LeaderOSCommand implements SimpleCommand {
         String[] args = invocation.arguments();
         if (args.length == 1 && args[0].equals("reload")) {
             if (source.hasPermission("leaderosauth.reload")) {
-                Velocity.getInstance().getConfigFile().load(true);
-                Velocity.getInstance().getLangFile().load(true);
-
-                Shared.setLink(UrlUtil.format(Velocity.getInstance().getConfigFile().getSettings().getUrl()));
-                Shared.setApiKey(Velocity.getInstance().getConfigFile().getSettings().getApiKey());
+                Velocity.getInstance().reloadConfiguration();
 
                 ChatUtil.sendMessage(source, Velocity.getInstance().getLangFile().getMessages().getReload());
             } else

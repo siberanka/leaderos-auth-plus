@@ -14,6 +14,7 @@ import net.leaderos.auth.shared.helpers.Placeholder;
 import net.leaderos.auth.shared.helpers.UserAgentUtil;
 import net.leaderos.auth.shared.helpers.ValidationUtil;
 import net.leaderos.auth.shared.model.response.GameSessionResponse;
+import net.leaderos.auth.shared.security.RegistrationDecision;
 import org.bukkit.entity.Player;
 
 import java.util.List;
@@ -104,11 +105,11 @@ public class RegisterCommand extends BaseCommand {
             String email = secondArgType == RegisterSecondArg.EMAIL ? secondArg : null;
             String userAgent = UserAgentUtil.generateUserAgent(!plugin.getConfigFile().getSettings().isSession());
 
-            // Registration Limit check (checks both direct IP registers and total network
-            // alts)
-            if (plugin.getAltAccountManager().hasReachedLimit(ip, player.getName())) {
-                int expTime = plugin.getConfigFile().getSettings().getDatabase().getExpirationTime();
-                List<String> knownAlts = plugin.getDatabase().getNetworkAltsByIp(ip, expTime);
+            // Atomically reserve a slot before calling the remote registration API.
+            RegistrationDecision registrationDecision = plugin.getAltAccountManager()
+                    .reserveRegistration(ip, player.getName());
+            if (!registrationDecision.isAllowed()) {
+                List<String> knownAlts = registrationDecision.getAccountNames();
                 String altsString = knownAlts.isEmpty() ? "Yok" : String.join(", ", knownAlts);
                 String maxStr = String
                         .valueOf(plugin.getConfigFile().getSettings().getRegisterLimit().getMaxAccountsPerIp());
@@ -125,12 +126,21 @@ public class RegisterCommand extends BaseCommand {
             AuthUtil.register(player.getName(), password, email, ip, userAgent).whenComplete((result, ex) -> {
                 plugin.getFoliaLib().getScheduler().runNextTick((task) -> {
                     if (ex != null) {
+                        plugin.getAltAccountManager().cancelRegistration(
+                                registrationDecision.getReservationToken());
                         ex.printStackTrace();
                         ChatUtil.sendMessage(player, plugin.getLangFile().getMessages().getAnErrorOccurred());
                         return;
                     }
 
                     if (result.isStatus()) {
+                        if (!plugin.getAltAccountManager().completeRegistration(
+                                registrationDecision.getReservationToken(), player, ip)) {
+                            plugin.getLogger().severe("Registration succeeded remotely but its security record "
+                                    + "could not be committed for " + player.getName() + ".");
+                        }
+                        plugin.getAltAccountManager().processPlayerRecord(player, ip);
+
                         // Kick the player if email verification is required
                         if (result.isEmailVerificationRequired()
                                 && plugin.getConfigFile().getSettings().getEmailVerification().isKickAfterRegister()) {
@@ -148,9 +158,6 @@ public class RegisterCommand extends BaseCommand {
                         plugin.getAuthMeCompatBridge().callRegister(player);
                         plugin.forceAuthenticate(player);
 
-                        plugin.getAltAccountManager().incrementRegistration(ip);
-                        plugin.getAltAccountManager().processPlayerRecord(player, ip);
-
                         ChatUtil.sendConsoleInfo(player.getName() + " has registered successfully.");
                         ChatUtil.sendMessage(player, plugin.getLangFile().getMessages().getRegister().getSuccess());
 
@@ -160,10 +167,15 @@ public class RegisterCommand extends BaseCommand {
                                         plugin.getConfigFile().getSettings().getSendAfterAuth().getServer());
                             }, 20L);
                         }
-                    } else if (result.getError() == ErrorCode.USERNAME_ALREADY_EXIST) {
+                    } else {
+                        plugin.getAltAccountManager().cancelRegistration(
+                                registrationDecision.getReservationToken());
+                    }
+
+                    if (!result.isStatus() && result.getError() == ErrorCode.USERNAME_ALREADY_EXIST) {
                         ChatUtil.sendMessage(player,
                                 plugin.getLangFile().getMessages().getRegister().getAlreadyRegistered());
-                    } else if (result.getError() == ErrorCode.REGISTER_LIMIT) {
+                    } else if (!result.isStatus() && result.getError() == ErrorCode.REGISTER_LIMIT) {
                         int expTime = plugin.getConfigFile().getSettings().getDatabase().getExpirationTime();
                         List<String> knownAlts = plugin.getDatabase().getNetworkAltsByIp(ip, expTime);
                         String altsString = knownAlts.isEmpty() ? "Web API" : String.join(", ", knownAlts);
@@ -175,17 +187,17 @@ public class RegisterCommand extends BaseCommand {
                                 new Placeholder("{max}", maxStr),
                                 new Placeholder("{prefix}", plugin.getLangFile().getMessages().getPrefix()));
                         ChatUtil.sendMessage(player, message);
-                    } else if (result.getError() == ErrorCode.INVALID_USERNAME) {
+                    } else if (!result.isStatus() && result.getError() == ErrorCode.INVALID_USERNAME) {
                         ChatUtil.sendMessage(player, plugin.getLangFile().getMessages().getRegister().getInvalidName());
-                    } else if (result.getError() == ErrorCode.INVALID_EMAIL) {
+                    } else if (!result.isStatus() && result.getError() == ErrorCode.INVALID_EMAIL) {
                         ChatUtil.sendMessage(player,
                                 plugin.getLangFile().getMessages().getRegister().getInvalidEmail());
-                    } else if (result.getError() == ErrorCode.EMAIL_ALREADY_EXIST) {
+                    } else if (!result.isStatus() && result.getError() == ErrorCode.EMAIL_ALREADY_EXIST) {
                         ChatUtil.sendMessage(player, plugin.getLangFile().getMessages().getRegister().getEmailInUse());
-                    } else if (result.getError() == ErrorCode.INVALID_PASSWORD) {
+                    } else if (!result.isStatus() && result.getError() == ErrorCode.INVALID_PASSWORD) {
                         ChatUtil.sendMessage(player,
                                 plugin.getLangFile().getMessages().getRegister().getInvalidPassword());
-                    } else {
+                    } else if (!result.isStatus()) {
                         Shared.getDebugAPI().send("An unexpected error occurred during register: " + result, true);
                         ChatUtil.sendMessage(player, plugin.getLangFile().getMessages().getAnErrorOccurred());
                     }

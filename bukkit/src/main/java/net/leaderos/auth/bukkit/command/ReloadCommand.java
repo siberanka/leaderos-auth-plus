@@ -35,8 +35,8 @@ public class ReloadCommand extends BaseCommand {
         plugin.getFoliaLib().getScheduler().runAsync((task) -> {
             if (plugin.getDatabase() != null) {
                 plugin.getDatabase().closeDataSource();
-                plugin.setupDatabase();
             }
+            plugin.setupDatabase();
         });
 
         // Kicking players that haven't verified a valid session state according to the

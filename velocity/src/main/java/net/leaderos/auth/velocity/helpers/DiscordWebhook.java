@@ -82,6 +82,8 @@ public class DiscordWebhook {
 
                 URL url = new URI(webhookUrl).toURL();
                 HttpURLConnection connection = (HttpURLConnection) url.openConnection();
+                connection.setConnectTimeout(10_000);
+                connection.setReadTimeout(30_000);
                 connection.setRequestMethod("POST");
                 connection.setRequestProperty("Content-Type", "application/json");
                 connection.setDoOutput(true);

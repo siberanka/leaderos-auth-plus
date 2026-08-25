@@ -51,7 +51,7 @@ import java.util.Collections;
  */
 @Getter
 @Setter
-@Plugin(id = "leaderosauth", name = "LeaderOS-Auth", version = "1.0.5-fork", url = "https://leaderos.net", description = "LeaderOS Auth for Velocity", authors = {
+@Plugin(id = "leaderosauth", name = "LeaderOS-Auth", version = "1.0.6-siberanka", url = "https://leaderos.net", description = "LeaderOS Auth for Velocity", authors = {
         "leaderos", "efekurbann", "siberanka" }, dependencies = { @Dependency(id = "limboapi") })
 public class Velocity {
 
@@ -172,10 +172,8 @@ public class Velocity {
 
     private void setupDatabase() {
         Config.Settings.Database dbConfig = configFile.getSettings().getDatabase();
-        if (!configFile.getSettings().getAltTracker().isEnabled()) {
-            logger.info("Alt account logger is disabled.");
-            return;
-        }
+        boolean securityRequired = configFile.getSettings().getRegisterLimit().isEnabled();
+        this.altAccountManager = new AltAccountManager(this);
 
         String type = dbConfig.getType().toUpperCase();
         if (type.equals("MYSQL")) {
@@ -187,14 +185,19 @@ public class Velocity {
             this.database = new Sqlite(logger, dbConfig.isDebug(), dbConfig.getPrefix(),
                     dataDirectory.toFile());
         }
+        this.database.setIpv6PrefixLength(
+                configFile.getSettings().getRegisterLimit().getIpv6PrefixLength());
 
         if (!this.database.initialize()) {
-            logger.error("Failed to initialize database for alt account tracking!");
+            logger.error("Failed to initialize database for account security!");
             this.database = null;
+            if (securityRequired) {
+                throw new IllegalStateException(
+                        "Registration limit is enabled but its security database could not be initialized");
+            }
             return;
         }
 
-        this.altAccountManager = new AltAccountManager(this);
         logger.info("Alt account tracking initialized with " + type + " database.");
 
         // Auto-purge old records
@@ -226,6 +229,7 @@ public class Velocity {
         try {
             File configYml = new File(getDataDirectory().toFile().getAbsolutePath(), "config.yml");
             this.configFile = loadConfigWithRecovery(Config.class, configYml);
+            validateSecurityConfig();
             this.configFile.save();
 
             String langName = configFile.getSettings().getLang();
@@ -238,6 +242,64 @@ public class Velocity {
         } catch (Exception exception) {
             getLogger().error("Failed to load config/language files!", exception);
         }
+    }
+
+    private void validateSecurityConfig() {
+        Config.Settings settings = configFile.getSettings();
+        Config.Settings.RegisterLimit limit = settings.getRegisterLimit();
+        if (limit.isEnabled() && limit.getMaxAccountsPerIp() < 1) {
+            logger.warn("register-limit is enabled but max-accounts-per-ip is below 1; forcing 1.");
+            limit.setMaxAccountsPerIp(1);
+        } else if (limit.getMaxAccountsPerIp() > 10000) {
+            logger.warn("max-accounts-per-ip is too large; clamping it to 10000.");
+            limit.setMaxAccountsPerIp(10000);
+        }
+        int ipv6Prefix = Math.max(48, Math.min(64, limit.getIpv6PrefixLength()));
+        if (ipv6Prefix != limit.getIpv6PrefixLength()) {
+            logger.warn("ipv6-prefix-length must be between 48 and 64; using " + ipv6Prefix + ".");
+            limit.setIpv6PrefixLength(ipv6Prefix);
+        }
+        int reservationTimeout = Math.max(120, Math.min(3600, limit.getReservationTimeoutSeconds()));
+        if (reservationTimeout != limit.getReservationTimeoutSeconds()) {
+            logger.warn("reservation-timeout-seconds must be between 120 and 3600; using "
+                    + reservationTimeout + ".");
+            limit.setReservationTimeoutSeconds(reservationTimeout);
+        }
+        Config.Settings.Database databaseConfig = settings.getDatabase();
+        if (databaseConfig.getPrefix() == null
+                || !databaseConfig.getPrefix().matches("[A-Za-z0-9_]{1,32}")) {
+            logger.warn("Unsafe database table prefix rejected; using leaderos_auth_.");
+            databaseConfig.setPrefix("leaderos_auth_");
+        }
+        if (!"MYSQL".equalsIgnoreCase(databaseConfig.getType())
+                && !"SQLITE".equalsIgnoreCase(databaseConfig.getType())) {
+            logger.warn("Unknown database type; using SQLITE.");
+            databaseConfig.setType("SQLITE");
+        }
+        if (databaseConfig.getExpirationTime() < 0) {
+            databaseConfig.setExpirationTime(0);
+        }
+        try {
+            int port = Integer.parseInt(databaseConfig.getMysqlPort());
+            if (port < 1 || port > 65535) {
+                throw new NumberFormatException("out of range");
+            }
+        } catch (NumberFormatException exception) {
+            logger.warn("Invalid MySQL port; using 3306.");
+            databaseConfig.setMysqlPort("3306");
+        }
+    }
+
+    public synchronized void reloadConfiguration() {
+        setupFiles();
+        if (database != null) {
+            database.closeDataSource();
+        }
+        database = null;
+        altAccountManager = null;
+        setupDatabase();
+        Shared.setLink(UrlUtil.format(configFile.getSettings().getUrl()));
+        Shared.setApiKey(configFile.getSettings().getApiKey());
     }
 
     private <T extends eu.okaeri.configs.OkaeriConfig> T loadConfigWithRecovery(Class<T> configClass, File file) {
@@ -315,7 +377,7 @@ public class Velocity {
 
     public void checkUpdate() {
         Velocity.getInstance().getServer().getScheduler().buildTask(Velocity.getInstance(), () -> {
-            PluginUpdater updater = new PluginUpdater("1.0.5");
+            PluginUpdater updater = new PluginUpdater("1.0.6-siberanka");
             try {
                 if (updater.checkForUpdates()) {
                     Component msg = ChatUtil.replacePlaceholders(

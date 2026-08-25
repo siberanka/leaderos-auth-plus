@@ -180,6 +180,7 @@ public class Bukkit extends JavaPlugin {
         try {
             File configYml = new File(this.getDataFolder().getAbsolutePath(), "config.yml");
             this.configFile = loadConfigWithRecovery(Config.class, configYml);
+            validateSecurityConfig();
             this.configFile.save();
 
             String langName = configFile.getSettings().getLang();
@@ -191,6 +192,43 @@ public class Bukkit extends JavaPlugin {
             this.langFile.save();
         } catch (Exception exception) {
             getLogger().log(Level.SEVERE, "Failed to load config/language files!", exception);
+        }
+    }
+
+    private void validateSecurityConfig() {
+        Config.Settings settings = configFile.getSettings();
+        Config.Settings.RegisterLimit limit = settings.getRegisterLimit();
+        if (limit.isEnabled() && limit.getMaxAccountsPerIp() < 1) {
+            getLogger().warning("register-limit is enabled but max-accounts-per-ip is below 1; forcing 1.");
+            limit.setMaxAccountsPerIp(1);
+        } else if (limit.getMaxAccountsPerIp() > 10000) {
+            getLogger().warning("max-accounts-per-ip is too large; clamping it to 10000.");
+            limit.setMaxAccountsPerIp(10000);
+        }
+        int ipv6Prefix = Math.max(48, Math.min(64, limit.getIpv6PrefixLength()));
+        if (ipv6Prefix != limit.getIpv6PrefixLength()) {
+            getLogger().warning("ipv6-prefix-length must be between 48 and 64; using " + ipv6Prefix + ".");
+            limit.setIpv6PrefixLength(ipv6Prefix);
+        }
+        int reservationTimeout = Math.max(120, Math.min(3600, limit.getReservationTimeoutSeconds()));
+        if (reservationTimeout != limit.getReservationTimeoutSeconds()) {
+            getLogger().warning("reservation-timeout-seconds must be between 120 and 3600; using "
+                    + reservationTimeout + ".");
+            limit.setReservationTimeoutSeconds(reservationTimeout);
+        }
+        Config.Settings.Database databaseConfig = settings.getDatabase();
+        if (databaseConfig.getPrefix() == null
+                || !databaseConfig.getPrefix().matches("[A-Za-z0-9_]{1,32}")) {
+            getLogger().warning("Unsafe database table prefix rejected; using leaderos_auth_.");
+            databaseConfig.setPrefix("leaderos_auth_");
+        }
+        if (!"MYSQL".equalsIgnoreCase(databaseConfig.getType())
+                && !"SQLITE".equalsIgnoreCase(databaseConfig.getType())) {
+            getLogger().warning("Unknown database type; using SQLITE.");
+            databaseConfig.setType("SQLITE");
+        }
+        if (databaseConfig.getExpirationTime() < 0) {
+            databaseConfig.setExpirationTime(0);
         }
     }
 
