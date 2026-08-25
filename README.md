@@ -1,3 +1,11 @@
+<!-- DOWNLOAD_BADGES_START -->
+<p align="center">
+  <a href="https://gitlab.com/siberanka/leaderos-auth-plus/-/releases/permalink/latest/downloads/bukkit.jar"><img alt="Download Bukkit" src="https://img.shields.io/badge/Download-Bukkit-f39c12?logo=gitlab&logoColor=white"></a>
+  <a href="https://gitlab.com/siberanka/leaderos-auth-plus/-/releases/permalink/latest/downloads/bungeecord.jar"><img alt="Download BungeeCord" src="https://img.shields.io/badge/Download-BungeeCord-6f42c1?logo=gitlab&logoColor=white"></a>
+  <a href="https://gitlab.com/siberanka/leaderos-auth-plus/-/releases/permalink/latest/downloads/velocity.jar"><img alt="Download Velocity" src="https://img.shields.io/badge/Download-Velocity-1f6feb?logo=gitlab&logoColor=white"></a>
+</p>
+<!-- DOWNLOAD_BADGES_END -->
+
 # LeaderOS Auth Plus
 
 **Minecraft sunucuları için LeaderOS panel kimlik doğrulama eklentisi.** **Bukkit/Spigot/Paper/Folia**, **BungeeCord** ve **Velocity** proxy sunucularını destekler.
