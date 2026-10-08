@@ -15,6 +15,29 @@ public final class IpAddressNormalizer {
     }
 
     public static String normalize(String input, int ipv6PrefixLength) {
+        return normalize(input, ipv6PrefixLength, true);
+    }
+
+    /**
+     * Normalizes an address without grouping IPv6 networks, for comparing two connections exactly.
+     * IPv4-mapped IPv6 addresses become plain IPv4.
+     */
+    public static String exact(String input) {
+        return normalize(input, 128, false);
+    }
+
+    /**
+     * True when both values are valid and denote the same address.
+     */
+    public static boolean sameAddress(String first, String second) {
+        try {
+            return exact(first).equals(exact(second));
+        } catch (IllegalArgumentException invalid) {
+            return false;
+        }
+    }
+
+    private static String normalize(String input, int ipv6PrefixLength, boolean groupIpv6) {
         if (input == null) {
             throw new IllegalArgumentException("IP address cannot be null");
         }
@@ -45,6 +68,9 @@ public final class IpAddressNormalizer {
                             + (bytes[14] & 0xff) + "." + (bytes[15] & 0xff);
                 }
 
+                if (!groupIpv6) {
+                    return InetAddress.getByAddress(bytes).getHostAddress().toLowerCase(Locale.ROOT);
+                }
                 int prefix = clampIpv6Prefix(ipv6PrefixLength);
                 mask(bytes, prefix);
                 return InetAddress.getByAddress(bytes).getHostAddress().toLowerCase(Locale.ROOT) + "/" + prefix;
