@@ -10,7 +10,7 @@
 
 **Minecraft sunucuları için LeaderOS panel kimlik doğrulama eklentisi.** **Bukkit/Spigot/Paper/Folia**, **BungeeCord** ve **Velocity** proxy sunucularını destekler.
 
-> **Sürüm:** 1.0.6-siberanka
+> **Sürüm:** 1.1.0-siberanka
 > **Yazarlar:** leaderos, efekurbann, siberanka
 
 ---
@@ -27,15 +27,26 @@
 - **Yanlış Şifrede Atma** — Yapılandırılabilir yanlış şifre koruması
 - **Kimlik Doğrulama Süresi** — Belirli süre içinde giriş yapmayan oyuncular atılır
 
-#### 📱 Bedrock / Floodgate Desteği (Bukkit)
-- **Otomatik Form Menüleri** — Bedrock oyuncularına Floodgate `CustomForm` arayüzü ile giriş, kayıt ve 2FA formları gönderilir
+#### 🔁 Yeniden Bağlanma ve Proxy Akışı (BungeeCord / Velocity)
+- **Proxy Tarafında Oturum Kontrolü (BungeeCord)** — Oyuncu proxy'ye girerken panelden oturumu (ad + IP + sabit user-agent) sorulur; geçerli oturumu olan oyuncu auth sunucusuna hiç uğramadan istediği sunucuya gider. Karar yine panelindir; hata veya zaman aşımında eski akış (auth sunucusu) uygulanır
+- **İstenen Sunucuya Dönüş** — Auth sunucusunda tutulan oyuncunun asıl istediği sunucu (forced host, twilight-proxy yönlendirmesi vb.) 10 dakikalığına hatırlanır; girişten sonra oyuncu sabit `send-after-auth` sunucusu yerine oraya **yeni bir bağlantı isteğiyle** gönderilir (diğer eklentilerin izin kontrolleri yeniden çalışır). `send-after-auth` yedek olarak kalır
+- **Velocity Limbo Düzeltmesi** — Limbo'da giriş/kayıt veya geçerli oturum sonrası ilk sunucu bağlantısı artık reddedilmez (1.0.x'te oyuncular limbodan sonra hiçbir sunucuya bağlanamıyordu)
+- **Hızlı Yeniden Bağlanma Yarışları** — Eski bağlantı henüz düşmeden gelen yeniden bağlanma yalnızca aynı UUID **ve** aynı IP'den geliyorsa kabul edilir (sunucu eskisini düşürür); farklı IP/UUID'den aynı isimle giriş yine reddedilir. Yeni bağlantı kendi oturumunu kullanır ve ayrıca doğrulanır
+- **twilight-proxy Uyumu** — Bedrock paket yeniden bağlanmalarında oyuncu ya oturumuyla doğrudan hedefe gider ya da girişten sonra yönlendirildiği sunucuya döner
+
+#### 📱 Bedrock / Floodgate Desteği (Bukkit + Velocity)
+- **Otomatik Form Menüleri** — Bedrock oyuncularına Floodgate `CustomForm` arayüzü ile giriş, kayıt ve 2FA formları gönderilir (Bukkit'te ve Velocity auth limbosunda)
+- **Xbox (XUID) Güveni — isteğe bağlı, varsayılan kapalı** — `bedrock.trust-xbox: true` ile hesap, Floodgate oyuncusu şifresiyle (ve gerekiyorsa 2FA ile) giriş yaptığında veya kayıt olduğunda o oyuncunun XUID'sine bağlanır; sonraki girişlerde yalnızca Floodgate API'sinin doğruladığı aynı XUID şifresiz girer. Karar **asla** isim önekiyle (`.`) verilmez; başka bir Xbox hesabı bağı devralamaz; bağ son şifreli girişten sonra `trust-max-age-days` gün geçerlidir; `/leaderosauth unlinkbedrock <oyuncu>` ile kaldırılır
 - **Yapılandırılabilir Gecikme** — Formlar, oyuncu girdikten sonra yapılandırılabilir bir gecikmeyle gösterilir (varsayılan: 2 saniye)
 - **Exploit Korumaları** — Form kilidi (çift gönderimi engeller), gönderimler arası bekleme süresi, oturum durumu doğrulama
 - **Otomatik Yeniden Gönderim** — Hata veya geçersiz giriş sonrasında formlar otomatik yeniden gösterilir
 - **Tam Yerelleştirme** — Tüm form metinleri `lang/en.yml` ve `lang/tr.yml` ile yapılandırılabilir
 
 #### 🛡️ Güvenlik
-- **IP Bağlantı Limiti** — IP başına yapılandırılabilir maksimum eşzamanlı bağlantı sayısı, atomik sayaç ile race condition korumalı (Bukkit, BungeeCord, Velocity)
+- **İmzalı Proxy Mesajları** — Backend → proxy giriş durumu ve yönlendirme mesajları (`leaderos:auth` kanalı) HMAC-SHA256, zaman damgası ve tek kullanımlık nonce ile imzalanır; imzasız, sahte, süresi geçmiş veya tekrar oynatılan mesajlar reddedilir. Kanal proxy'de iki yönde de tüketilir: istemciler okuyamaz ve backend'e gönderemez
+- **AuthMe Köprüsü Sertleştirmesi** — `AuthMe.v2 perform.login` mesajı yalnızca `authme-bridge.accept-proxy-login: true` iken **ve** sunucu bir proxy arkasındayken kabul edilir (1.0.x'te proxy'siz sunucularda değiştirilmiş bir istemci bu mesajla şifresiz giriş yapabiliyordu)
+- **Floodgate'siz Çalışma Düzeltmesi** — Floodgate kurulu olmayan sunucularda giriş olayının her seferinde hata vermesine yol açan sınıf yükleme sorunu giderildi
+- **IP Bağlantı Limiti** — IP başına maksimum eşzamanlı bağlantı; çevrimiçi oyuncular canlı sayılır, yalnızca süren girişler izlenir: başarısız girişler slot sızdırmaz, sunucu geçişleri çifte sayılmaz, Velocity'de limbodaki oyuncular da sayılır (Bukkit, BungeeCord, Velocity)
 - **Komut Engelleme** — Giriş yapmamış oyuncular yalnızca kimlik doğrulama komutlarını kullanabilir
 - **Tab-Complete Gizleme** — Giriş yapmamış oyunculara sadece auth komutları gösterilir, namespace'li komutlar da filtrelenir (Bukkit 1.13+, BungeeCord)
 - **Komut Cooldown** — Giriş yapmamış oyuncular için komut spam koruması (Bukkit, Velocity)
@@ -61,8 +72,8 @@
 |----------|-----------|
 | **Bukkit / Spigot / Paper** | Tam auth, Bedrock Floodgate formları, başlıklar, boss bar, spawn ışınlama, AuthMe API köprüsü, tab-complete koruması (1.13+), komut cooldown |
 | **Folia** | Tam Folia uyumluluğu (`folia-supported: true`) |
-| **BungeeCord** | Auth sunucuya yönlendirme, komut/sohbet engelleme, tab-complete gizleme, IP limiti |
-| **Velocity** | LimboAPI entegrasyonu, özel dünya desteği, tam auth akışı, komut cooldown, IP limiti |
+| **BungeeCord** | Auth sunucuya yönlendirme, proxy tarafında oturum kontrolü, istenen sunucuya dönüş, imzalı mesajlar, Xbox güveni (paylaşılan MySQL), komut/sohbet engelleme, tab-complete gizleme, IP limiti |
+| **Velocity** | LimboAPI entegrasyonu, özel dünya desteği, tam auth akışı, Bedrock formları, Xbox güveni, imzalı mesajlar, komut cooldown, IP limiti (3.4 ve 4.1 ile test edildi) |
 
 #### 📊 Ek Özellikler
 - **Başlık & Boss Bar** — Özelleştirilebilir başlık ve boss bar kimlik doğrulama uyarıları
@@ -76,9 +87,9 @@
 ### Kurulum
 
 1. Platformunuza uygun JAR dosyasını indirin:
-   - `leaderos-auth-bukkit-1.0.6-siberanka.jar` — Bukkit/Spigot/Paper/Folia
-   - `leaderos-auth-bungee-1.0.6-siberanka.jar` — BungeeCord
-   - `leaderos-auth-velocity-1.0.6-siberanka.jar` — Velocity (LimboAPI gerektirir)
+   - `leaderos-auth-bukkit-1.1.0-siberanka.jar` — Bukkit/Spigot/Paper/Folia
+   - `leaderos-auth-bungee-1.1.0-siberanka.jar` — BungeeCord
+   - `leaderos-auth-velocity-1.1.0-siberanka.jar` — Velocity (LimboAPI gerektirir)
 2. JAR dosyasını sunucunuzun `plugins/` dizinine yerleştirin
 3. Sunucuyu başlatarak yapılandırma dosyalarını oluşturun
 4. `config.yml` dosyasını LeaderOS panel URL'niz ve API anahtarınızla düzenleyin
@@ -93,8 +104,23 @@
 | `/tfa <kod>` | İki faktörlü doğrulama kodu gir |
 | `/losauthreload` | Yapılandırmayı ve veritabanı bağlantılarını yeniler, giriş yapmayanları atar (Sadece Bukkit) |
 | `/leaderosauth setspawn` | Auth spawn noktasını ayarla |
+| `/leaderosauth unlinkbedrock <oyuncu>` | Hesabın Bedrock (Xbox) giriş güvenini kaldırır (`leaderos.bedrock.unlink`; Bukkit ve Velocity) |
 
 **Komut Takma Adları:** `log`, `l`, `gir`, `giriş`, `reg`, `kaydol`, `kayıt`, `2fa`
+
+### 1.0.x'ten yükseltme
+
+- Backend (Bukkit) ve proxy (BungeeCord/Velocity) eklentisini **birlikte** güncelleyin; mesaj protokolü değişti.
+- Proxy imzasız mesajları varsayılan olarak reddeder. Gizli anahtar otomatik bulunur: Velocity modern/BungeeGuard forwarding gizlisi veya BungeeGuard token'ı. Bunlar yoksa backend'de `proxy-messaging.secret` ve proxy'de `messaging.secret` alanına **aynı** değeri (16+ karakter) yazın; aksi hâlde oyuncular girişten sonra auth sunucusunda kalır (konsola açık bir hata yazılır).
+- Geçiş sırasında `messaging.require-signature: false` ile eski backend mesajları geçici olarak kabul edilebilir (güvensiz, yalnızca yükseltme için).
+- BungeeCord proxy'de oturum kontrolü için `url` ve `api-key` girin (auth sunucusuyla aynı).
+
+### twilight-proxy / Geyser için önerilen ayarlar
+
+- Auth sunucusunda `session: true` bırakın; oturumu olan oyuncu paket yeniden bağlanmasında auth'a düşmeden hedefine gider.
+- Proxy'de `return-to-requested-server: true` (varsayılan) bırakın ve auth sunucusunu twilight-proxy'nin `login-servers` listesine ekleyin.
+- Floodgate verisi backend'lere iletiliyorsa (`send-floodgate-data: true`) Floodgate'i **tüm** backend'lere aynı `key.pem` ile kurun.
+- `bedrock.trust-xbox` yalnızca Geyser'de `validate-bedrock-login: true` iken güvenlidir (XUID'yi güvenilir yapan budur).
 
 ---
 
@@ -110,15 +136,26 @@
 - **Kick on Wrong Password** — Configurable wrong password kick protection
 - **Auth Timeout** — Players are kicked if they fail to authenticate within a configurable time limit
 
-#### 📱 Bedrock / Floodgate Support (Bukkit)
-- **Automatic Form Menus** — Bedrock players receive Floodgate `CustomForm` UI for login, register, and TFA
+#### 🔁 Reconnects and Proxy Flow (BungeeCord / Velocity)
+- **Proxy-side Session Check (BungeeCord)** — While a player logs in to the proxy, the panel is asked for its session (name + IP + fixed user agent); a player with a valid session goes straight to the server it asked for without visiting the auth server. The panel still decides; errors or timeouts fall back to the auth server
+- **Return to the Requested Server** — The server a player held on the auth server originally asked for (forced host, a twilight-proxy route, …) is remembered for 10 minutes; after the login the player is sent there **through a new connection request** (other plugins' permission checks run again) instead of the fixed `send-after-auth` server, which stays the fallback
+- **Velocity Limbo Fix** — The first server connection after a limbo login/registration or a valid session is no longer refused (in 1.0.x players could not reach any server after the limbo)
+- **Quick Reconnect Races** — A reconnect that arrives while the old connection is still listed is accepted only from the same UUID **and** the same IP (the server drops the old one); the same name from another IP/UUID is still refused. The new connection uses its own session and authenticates on its own
+- **twilight-proxy Compatibility** — On Bedrock pack reconnects the player either goes straight to its target with its session or returns to the server it was routed to after logging in
+
+#### 📱 Bedrock / Floodgate Support (Bukkit + Velocity)
+- **Automatic Form Menus** — Bedrock players receive Floodgate `CustomForm` UI for login, register, and TFA (on Bukkit and in the Velocity auth limbo)
+- **Xbox (XUID) Trust — optional, off by default** — With `bedrock.trust-xbox: true` an account is bound to the XUID of the Floodgate player that logs in with its password (and TFA when required) or registers; later logins skip the password only for that same XUID, as verified by the Floodgate API. The decision **never** relies on the name prefix (`.`); another Xbox account can never take over a binding; a binding stays valid for `trust-max-age-days` days after the last password login; remove it with `/leaderosauth unlinkbedrock <player>`
 - **Configurable Delay** — Forms appear after a configurable delay (default: 2 seconds after join)
 - **Exploit Protections** — Form lock (prevents double-submit), cooldown between submissions, session state validation
 - **Auto Re-send** — Forms re-appear automatically after errors or invalid input
 - **Fully Localized** — All form text configurable via `lang/en.yml` and `lang/tr.yml`
 
 #### 🛡️ Security
-- **IP Connection Limit** — Configurable max concurrent connections per IP, atomic counter to prevent race conditions (Bukkit, BungeeCord, Velocity)
+- **Signed Proxy Messages** — Backend → proxy login status and redirect messages (`leaderos:auth` channel) carry an HMAC-SHA256, a timestamp and a single-use nonce; unsigned, forged, stale or replayed messages are refused. The proxy consumes the channel in both directions: clients can neither read it nor send it to a backend
+- **AuthMe Bridge Hardening** — `AuthMe.v2 perform.login` is only accepted with `authme-bridge.accept-proxy-login: true` **and** while the server runs behind a proxy (in 1.0.x a modified client could log in without a password with this message on servers without a proxy)
+- **Runs Without Floodgate** — Fixed a class-loading problem that made the join handler fail on every join on servers without Floodgate
+- **IP Connection Limit** — Max concurrent connections per IP; online players are counted live and only logins in progress are tracked: failed logins never leak a slot, server switches never count twice, and on Velocity players in the limbo count too (Bukkit, BungeeCord, Velocity)
 - **Command Blocking** — Only authentication commands are allowed for unauthenticated players
 - **Tab-Complete Hiding** — Hides all commands from tab-completion except auth commands, including namespaced commands (Bukkit 1.13+, BungeeCord)
 - **Command Cooldown** — Rate-limiting for unauthenticated player commands to prevent API flooding (Bukkit, Velocity)
@@ -144,8 +181,8 @@
 |----------|----------|
 | **Bukkit / Spigot / Paper** | Full auth, Bedrock Floodgate forms, titles, boss bar, spawn teleport, AuthMe API bridge, tab-complete protection (1.13+), command cooldown |
 | **Folia** | Full Folia compatibility (`folia-supported: true`) |
-| **BungeeCord** | Auth server redirection, command/chat blocking, tab-complete hiding, IP limit |
-| **Velocity** | LimboAPI integration, custom world support, full auth flow, command cooldown, IP limit |
+| **BungeeCord** | Auth server redirection, proxy-side session check, return to the requested server, signed messages, Xbox trust (shared MySQL), command/chat blocking, tab-complete hiding, IP limit |
+| **Velocity** | LimboAPI integration, custom world support, full auth flow, Bedrock forms, Xbox trust, signed messages, command cooldown, IP limit (tested with 3.4 and 4.1) |
 
 #### 📊 Additional Features
 - **Title & Boss Bar** — Customizable title and boss bar prompts for authentication
@@ -159,9 +196,9 @@
 ### Installation
 
 1. Download the appropriate JAR for your platform:
-   - `leaderos-auth-bukkit-1.0.6-siberanka.jar` for Bukkit/Spigot/Paper/Folia
-   - `leaderos-auth-bungee-1.0.6-siberanka.jar` for BungeeCord
-   - `leaderos-auth-velocity-1.0.6-siberanka.jar` for Velocity (requires LimboAPI)
+   - `leaderos-auth-bukkit-1.1.0-siberanka.jar` for Bukkit/Spigot/Paper/Folia
+   - `leaderos-auth-bungee-1.1.0-siberanka.jar` for BungeeCord
+   - `leaderos-auth-velocity-1.1.0-siberanka.jar` for Velocity (requires LimboAPI)
 2. Place the JAR in your server's `plugins/` directory
 3. Start the server to generate config files
 4. Edit `config.yml` with your LeaderOS panel URL and API key
@@ -176,8 +213,23 @@
 | `/tfa <code>` | Enter two-factor authentication code |
 | `/losauthreload` | Securely reloads config/DBs and kicks unauthenticated players (Bukkit Only) |
 | `/leaderosauth setspawn` | Set the auth spawn location |
+| `/leaderosauth unlinkbedrock <player>` | Removes the Bedrock (Xbox) login trust of an account (`leaderos.bedrock.unlink`; Bukkit and Velocity) |
 
 **Command Aliases:** `log`, `l`, `gir`, `giriş`, `reg`, `kaydol`, `kayıt`, `2fa`
+
+### Upgrading from 1.0.x
+
+- Update the backend (Bukkit) and the proxy (BungeeCord/Velocity) plugin **together**; the message protocol changed.
+- The proxy refuses unsigned messages by default. The secret is found automatically: the Velocity modern/BungeeGuard forwarding secret or the BungeeGuard token. Without those, set the **same** value (16+ characters) in `proxy-messaging.secret` on the backend and `messaging.secret` on the proxy; otherwise players stay on the auth server after logging in (a clear error is logged).
+- During the switch, `messaging.require-signature: false` temporarily accepts messages of old backends (insecure, upgrades only).
+- Set `url` and `api-key` on the BungeeCord proxy (same as the auth server) for the proxy-side session check.
+
+### Recommended settings with twilight-proxy / Geyser
+
+- Keep `session: true` on the auth server: a player with a session reaches its target after a pack reconnect without passing the auth server.
+- Keep `return-to-requested-server: true` (default) on the proxy and add the auth server to twilight-proxy's `login-servers`.
+- When Floodgate data is forwarded (`send-floodgate-data: true`), install Floodgate on **every** backend with the same `key.pem`.
+- `bedrock.trust-xbox` is only safe while Geyser keeps `validate-bedrock-login: true` (that is what makes the XUID trustworthy).
 
 ---
 
@@ -189,44 +241,61 @@
 settings:
   # Dil / Language: en or tr
   lang: en
-  
+
   # LeaderOS panel URL
   url: "https://yourwebsite.com"
-  
+
   # API anahtarı / API key
   api-key: ""
-  
+
   # Oturum desteği / Session support
   session: true
-  
+
   # Yanlış şifrede at / Kick on wrong password
   kick-on-wrong-password: true
-  
+
   # Kimlik doğrulama süresi (saniye) / Auth timeout (seconds)
   auth-timeout: 60
-  
+
   # Komut bekleme süresi (saniye) / Command cooldown (seconds)
   command-cooldown: 3
-  
+
   # Minimum şifre uzunluğu / Minimum password length
   min-password-length: 5
-  
+
   # IP başına maks bağlantı (0 = devre dışı) / Max connections per IP (0 = disabled)
   max-join-per-ip: 0
-  
+
   # Kayıt ikinci argüman / Register second argument: PASSWORD_CONFIRM or EMAIL
   register-second-arg: PASSWORD_CONFIRM
-  
+
   # Auth sonrası gönderme / Send after auth
+  # Proxy'de return-to-requested-server açıksa istenen sunucu önceliklidir; bu sunucu yedektir.
+  # With return-to-requested-server on the proxy, the requested server wins; this is the fallback.
   send-after-auth:
     enabled: false
     server: "lobby"
-  
+
+  # Proxy mesaj imzası / Proxy message signing (HMAC-SHA256 + timestamp + nonce)
+  proxy-messaging:
+    # Boş: Paper Velocity forwarding gizlisi veya ilk BungeeGuard token'ı kullanılır.
+    # Empty: Paper's Velocity forwarding secret or the first BungeeGuard token is used.
+    secret: ""
+
+  # AuthMe köprüsü / AuthMe bridge
+  authme-bridge:
+    # AuthMeBungee/AuthMeVelocity "perform.login" kabul edilsin mi? Yalnızca proxy arkasında geçerlidir.
+    # Accept AuthMeBungee/AuthMeVelocity "perform.login"? Only ever honoured behind a proxy.
+    accept-proxy-login: false
+
   # Bedrock/Floodgate form ayarları / Bedrock form settings
   bedrock:
     enabled: true
     form-delay: 40  # tick (20 = 1 saniye / 1 second)
-  
+    # Xbox (XUID) güveni / Xbox (XUID) trust - varsayılan kapalı / off by default
+    trust-xbox: false
+    trust-max-age-days: 30
+
   # Yan hesap bildirimi için Discord ayarları / Discord Webhook settings for Alt Account tracking
   discord:
     enabled: true
@@ -278,17 +347,17 @@ The limiter atomically reserves a slot before the remote API call, counts pendin
 settings:
   # Auth sunucu adı / Auth server name
   auth-server: "auth_lobby"
-  
+
   # İzin verilen komutlar / Allowed commands
   allowed-commands:
     - "login"
     - "register"
     - "tfa"
     - "2fa"
-  
+
   # Tab-complete gizleme / Hide tab-complete
   hide-tab-complete: true
-  
+
   # Tab-complete izinli komutlar / Tab-complete allowed commands
   tab-complete-allowed-commands:
     - "2fa"
@@ -297,12 +366,53 @@ settings:
     - "login"
     - "register"
     - "tfa"
-  
+
   # IP başına maks bağlantı (0 = devre dışı) / Max connections per IP (0 = disabled)
   max-join-per-ip: 0
-  
+
   # IP limiti atma mesajı / IP limit kick message
   kick-max-connections-per-ip: "&cToo many connections from your IP address!"
+
+  # Panel (proxy tarafında oturum kontrolü için) / Panel (for the proxy-side session check)
+  url: "https://yourwebsite.com"
+  api-key: "YOUR_API_KEY"
+  session: true
+  session-check-timeout-millis: 3000
+
+  # Girişten sonra istenen sunucuya dön / Return to the requested server after login
+  return-to-requested-server: true
+  requested-server-ttl-seconds: 600
+
+  # İmzalı backend mesajları / Signed backend messages
+  messaging:
+    secret: ""               # boş = BungeeGuard token / empty = BungeeGuard token
+    require-signature: true  # false yalnızca yükseltme sırasında / false only while upgrading
+
+  # Xbox güveni (auth sunucusuyla paylaşılan MySQL) / Xbox trust (MySQL shared with the auth server)
+  bedrock:
+    trust-xbox: false
+    trust-max-age-days: 30
+    database:
+      mysql-hostname: "localhost"
+      mysql-port: "3306"
+      mysql-database: "minecraft"
+      mysql-username: "root"
+      mysql-password: ""
+      jdbcurl-properties: "?useSSL=false&autoReconnect=true"
+      prefix: "leaderos_auth_"
+```
+
+### Velocity `config.yml` (yeni anahtarlar / new keys)
+
+```yaml
+settings:
+  messaging:
+    secret: ""          # boş = Velocity forwarding gizlisi / empty = Velocity forwarding secret
+  bedrock:
+    forms: true         # auth limbosunda Bedrock formları / Bedrock forms in the auth limbo
+    form-delay-millis: 2000
+    trust-xbox: false
+    trust-max-age-days: 30
 ```
 
 ---
@@ -310,14 +420,14 @@ settings:
 ## Derleme / Building from Source
 
 ```bash
-# Tüm modüller için derleme gereksinimleri / Full-reactor build requirements: JDK 12+, Maven 3.6+
+# Tüm modüller için derleme gereksinimleri / Full-reactor build requirements: JDK 17+, Maven 3.6+
 mvn clean package -DskipTests
 ```
 
 Çıktı / Output JARs:
-- `bukkit/target/leaderos-auth-bukkit-1.0.6-siberanka.jar`
-- `bungee/target/leaderos-auth-bungee-1.0.6-siberanka.jar`
-- `velocity/target/leaderos-auth-velocity-1.0.6-siberanka.jar`
+- `bukkit/target/leaderos-auth-bukkit-1.1.0-siberanka.jar`
+- `bungee/target/leaderos-auth-bungee-1.1.0-siberanka.jar`
+- `velocity/target/leaderos-auth-velocity-1.1.0-siberanka.jar`
 
 ---
 
