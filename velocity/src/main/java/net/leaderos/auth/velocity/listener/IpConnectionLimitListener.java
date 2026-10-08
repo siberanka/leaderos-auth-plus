@@ -9,6 +9,7 @@ import com.velocitypowered.api.event.connection.PreLoginEvent;
 import com.velocitypowered.api.proxy.Player;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.JoinConfiguration;
+import net.leaderos.auth.shared.Shared;
 import net.leaderos.auth.shared.helpers.Placeholder;
 import net.leaderos.auth.shared.security.IpAddressNormalizer;
 import net.leaderos.auth.shared.security.IpConnectionTracker;
@@ -55,6 +56,8 @@ public class IpConnectionLimitListener {
         }
 
         if (!tracker.tryAdmit(event.getUsername(), ip, maxPerIP, online, System.currentTimeMillis())) {
+            Shared.getDebugAPI().send("Refused " + event.getUsername() + " from " + ip
+                    + ": connection limit per IP reached.", false);
             event.setResult(PreLoginEvent.PreLoginComponentResult.denied(
                     Component.join(JoinConfiguration.newlines(),
                             ChatUtil.replacePlaceholders(

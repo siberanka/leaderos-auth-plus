@@ -1,6 +1,7 @@
 package net.leaderos.auth.bungee.listener;
 
 import net.leaderos.auth.bungee.Bungee;
+import net.leaderos.auth.shared.Shared;
 import net.leaderos.auth.shared.security.IpAddressNormalizer;
 import net.leaderos.auth.shared.security.IpConnectionTracker;
 import net.md_5.bungee.api.ChatColor;
@@ -48,6 +49,8 @@ public class IpConnectionLimitListener implements Listener {
         }
 
         if (!tracker.tryAdmit(event.getConnection().getName(), ip, maxPerIP, online, System.currentTimeMillis())) {
+            Shared.getDebugAPI().send("Refused " + event.getConnection().getName() + " from " + ip
+                    + ": connection limit per IP reached.", false);
             event.setCancelReason(new TextComponent(
                     ChatColor.translateAlternateColorCodes('&',
                             plugin.getConfigFile().getSettings().getKickMaxConnectionsPerIP())));

@@ -2,6 +2,7 @@ package net.leaderos.auth.bukkit.listener;
 
 import net.leaderos.auth.bukkit.Bukkit;
 import net.leaderos.auth.bukkit.helpers.ChatUtil;
+import net.leaderos.auth.shared.Shared;
 import net.leaderos.auth.shared.helpers.Placeholder;
 import net.leaderos.auth.shared.security.IpAddressNormalizer;
 import net.leaderos.auth.shared.security.IpConnectionTracker;
@@ -48,6 +49,8 @@ public class IpConnectionLimitListener implements Listener {
         }
 
         if (!tracker.tryAdmit(event.getName(), ip, maxPerIP, online, System.currentTimeMillis())) {
+            Shared.getDebugAPI().send("Refused " + event.getName() + " from " + ip
+                    + ": connection limit per IP reached.", false);
             event.disallow(AsyncPlayerPreLoginEvent.Result.KICK_OTHER, String.join("\n",
                     ChatUtil.replacePlaceholders(plugin.getLangFile().getMessages().getKickMaxConnectionsPerIP(),
                             new Placeholder("{prefix}", plugin.getLangFile().getMessages().getPrefix()))));
