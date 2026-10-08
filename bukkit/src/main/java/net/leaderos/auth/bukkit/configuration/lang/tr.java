@@ -75,6 +75,10 @@ public class tr extends Language {
 
         private String alreadyLoggedIn = "{prefix} &cZaten giriş yaptınız!";
 
+        private String bedrockUnlinked = "{prefix} &e{player} &aiçin Bedrock (Xbox) giriş güveni kaldırıldı.";
+
+        private String bedrockNotLinked = "{prefix} &e{player} &cadlı hesabın Bedrock (Xbox) giriş güveni yok.";
+
         private Register register = new Register();
         private Login login = new Login();
         private Tfa tfa = new Tfa();
@@ -217,6 +221,8 @@ public class tr extends Language {
             private String accountNotFound = "{prefix} &cSunucumuza kayıtlı değilsiniz! Lütfen kayıt olunuz.";
 
             private String success = "{prefix} &aBaşarıyla giriş yaptınız!";
+
+            private String bedrockTrusted = "{prefix} &aBu hesaba bağlı Xbox hesabınızla otomatik giriş yapıldı.";
 
         }
 

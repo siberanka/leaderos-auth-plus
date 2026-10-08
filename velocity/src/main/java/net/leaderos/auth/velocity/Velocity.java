@@ -39,20 +39,30 @@ import net.leaderos.auth.velocity.database.Database;
 import net.leaderos.auth.velocity.database.Mysql;
 import net.leaderos.auth.velocity.database.Sqlite;
 import net.leaderos.auth.velocity.helpers.AltAccountManager;
+import net.leaderos.auth.velocity.helpers.BedrockTrust;
+import net.leaderos.auth.shared.messaging.AuthChannel;
+import net.leaderos.auth.shared.messaging.ReplayGuard;
+import net.leaderos.auth.shared.messaging.SecretDiscovery;
+import com.velocitypowered.api.proxy.Player;
+import com.velocitypowered.api.proxy.messages.MinecraftChannelIdentifier;
 import org.bstats.velocity.Metrics;
 import org.slf4j.Logger;
 
 import java.io.File;
 import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.Collections;
+import java.util.List;
+import java.util.Locale;
 
 /**
  * Main class of velocity
  */
 @Getter
 @Setter
-@Plugin(id = "leaderosauth", name = "LeaderOS-Auth", version = "1.0.6-siberanka", url = "https://leaderos.net", description = "LeaderOS Auth for Velocity", authors = {
-        "leaderos", "efekurbann", "siberanka" }, dependencies = { @Dependency(id = "limboapi") })
+@Plugin(id = "leaderosauth", name = "LeaderOS-Auth", version = "1.1.0-siberanka", url = "https://leaderos.net", description = "LeaderOS Auth for Velocity", authors = {
+        "leaderos", "efekurbann", "siberanka" }, dependencies = { @Dependency(id = "limboapi"),
+        @Dependency(id = "floodgate", optional = true) })
 public class Velocity {
 
     /**
@@ -100,10 +110,16 @@ public class Velocity {
     @Getter
     private AltAccountManager altAccountManager;
     /**
-     * Map of authenticated players
+     * Authenticated connections by lowercase name. The value is the connection itself, so an entry can
+     * never carry over to a later connection that uses the same name.
      */
+    private final java.util.Map<String, Player> authenticatedPlayers = new java.util.concurrent.ConcurrentHashMap<>();
     @Getter
-    private final java.util.Map<String, Boolean> authenticatedPlayers = new java.util.concurrent.ConcurrentHashMap<>();
+    private final ReplayGuard replayGuard = new ReplayGuard();
+    @Getter
+    private volatile List<AuthChannel.Key> messagingKeys = Collections.emptyList();
+    @Getter
+    private BedrockTrust bedrockTrust;
 
     /**
      * Constructor of main class
@@ -162,12 +178,42 @@ public class Velocity {
         this.server.getEventManager().register(this, new ConnectionListener(this));
         this.server.getEventManager().register(this, new IpConnectionLimitListener(this));
 
-        // Register plugin message channel
-        this.server.getChannelRegistrar().register(com.velocitypowered.api.proxy.messages.MinecraftChannelIdentifier.from("BungeeCord"));
+        // Signed messages from LeaderOS Auth on backend servers, if any backend runs it
+        loadMessagingKeys();
+        this.server.getChannelRegistrar().register(MinecraftChannelIdentifier.from(AuthChannel.CHANNEL));
         this.server.getEventManager().register(this, new net.leaderos.auth.velocity.listener.PluginMessageListener(this));
 
         // Initialize database for alt account tracking
         setupDatabase();
+        this.bedrockTrust = new BedrockTrust(this);
+        if (configFile.getSettings().getBedrock().isTrustXbox() && !BedrockTrust.isFloodgateAvailable()) {
+            logger.warn("bedrock.trust-xbox needs Floodgate on this proxy; Bedrock players log in with passwords.");
+        }
+    }
+
+    public boolean isAuthenticated(Player player) {
+        return player != null && authenticatedPlayers.get(player.getUsername().toLowerCase(Locale.ROOT)) == player;
+    }
+
+    public void setAuthenticated(Player player, boolean authenticated) {
+        if (player == null) {
+            return;
+        }
+        String key = player.getUsername().toLowerCase(Locale.ROOT);
+        if (authenticated) {
+            authenticatedPlayers.put(key, player);
+        } else {
+            authenticatedPlayers.remove(key, player);
+        }
+    }
+
+    private void loadMessagingKeys() {
+        String configured = configFile.getSettings().getMessaging().getSecret();
+        if (configured != null && !configured.trim().isEmpty() && !AuthChannel.isUsableSecret(configured)) {
+            logger.warn("messaging.secret is shorter than " + AuthChannel.MIN_SECRET_LENGTH
+                    + " characters and is ignored.");
+        }
+        messagingKeys = SecretDiscovery.keys(SecretDiscovery.velocity(Paths.get("").toAbsolutePath(), configured));
     }
 
     private void setupDatabase() {
@@ -279,6 +325,13 @@ public class Velocity {
         if (databaseConfig.getExpirationTime() < 0) {
             databaseConfig.setExpirationTime(0);
         }
+        Config.Settings.Bedrock bedrock = settings.getBedrock();
+        int trustMaxAge = Math.max(1, Math.min(365, bedrock.getTrustMaxAgeDays()));
+        if (trustMaxAge != bedrock.getTrustMaxAgeDays()) {
+            logger.warn("bedrock.trust-max-age-days must be between 1 and 365; using " + trustMaxAge + ".");
+            bedrock.setTrustMaxAgeDays(trustMaxAge);
+        }
+        bedrock.setFormDelayMillis(Math.max(0L, Math.min(30_000L, bedrock.getFormDelayMillis())));
         try {
             int port = Integer.parseInt(databaseConfig.getMysqlPort());
             if (port < 1 || port > 65535) {
@@ -300,6 +353,7 @@ public class Velocity {
         setupDatabase();
         Shared.setLink(UrlUtil.format(configFile.getSettings().getUrl()));
         Shared.setApiKey(configFile.getSettings().getApiKey());
+        loadMessagingKeys();
     }
 
     private <T extends eu.okaeri.configs.OkaeriConfig> T loadConfigWithRecovery(Class<T> configClass, File file) {
@@ -377,7 +431,7 @@ public class Velocity {
 
     public void checkUpdate() {
         Velocity.getInstance().getServer().getScheduler().buildTask(Velocity.getInstance(), () -> {
-            PluginUpdater updater = new PluginUpdater("1.0.6-siberanka");
+            PluginUpdater updater = new PluginUpdater("1.1.0-siberanka");
             try {
                 if (updater.checkForUpdates()) {
                     Component msg = ChatUtil.replacePlaceholders(

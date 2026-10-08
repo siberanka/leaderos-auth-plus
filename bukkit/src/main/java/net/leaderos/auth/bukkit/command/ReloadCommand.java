@@ -26,6 +26,7 @@ public class ReloadCommand extends BaseCommand {
     public void defaultCommand(CommandSender sender) {
         // Core Reloads (uses Okaeri broken-file rescue mechanisms)
         plugin.setupFiles();
+        plugin.getProxyMessenger().reload();
 
         // Subsystems
         Shared.setLink(UrlUtil.format(plugin.getConfigFile().getSettings().getUrl()));

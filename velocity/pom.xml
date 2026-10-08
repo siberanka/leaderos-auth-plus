@@ -10,7 +10,7 @@
     </parent>
 
     <artifactId>leaderos-auth-velocity</artifactId>
-    <version>1.0.6-siberanka</version>
+    <version>1.1.0-siberanka</version>
     <packaging>jar</packaging>
 
     <properties>
@@ -96,6 +96,12 @@
             <artifactId>api</artifactId>
             <version>2.2.3-SNAPSHOT</version>
             <scope>provided</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.junit.jupiter</groupId>
+            <artifactId>junit-jupiter</artifactId>
+            <version>5.10.2</version>
+            <scope>test</scope>
         </dependency>
         <!--<dependency>
             <groupId>net.elytrium.limboapi</groupId>

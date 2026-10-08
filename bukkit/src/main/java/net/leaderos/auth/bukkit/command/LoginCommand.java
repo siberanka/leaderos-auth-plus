@@ -97,15 +97,11 @@ public class LoginCommand extends BaseCommand {
                             ChatUtil.sendConsoleInfo(player.getName() + " has logged in successfully.");
                             ChatUtil.sendMessage(player, plugin.getLangFile().getMessages().getLogin().getSuccess());
                             plugin.forceAuthenticate(player);
+                            plugin.getBedrockTrust().rememberVerified(player);
 
                             plugin.getAltAccountManager().processPlayerRecord(player, ip);
 
-                            if (plugin.getConfigFile().getSettings().getSendAfterAuth().isEnabled()) {
-                                plugin.getFoliaLib().getScheduler().runLater(() -> {
-                                    plugin.sendPlayerToServer(player,
-                                            plugin.getConfigFile().getSettings().getSendAfterAuth().getServer());
-                                }, 20L);
-                            }
+                            plugin.sendAfterAuth(player);
                         }
                     } else if (result.getError() == ErrorCode.USER_NOT_FOUND) {
                         ChatUtil.sendMessage(player,

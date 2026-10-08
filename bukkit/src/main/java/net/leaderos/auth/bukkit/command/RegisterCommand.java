@@ -157,16 +157,12 @@ public class RegisterCommand extends BaseCommand {
 
                         plugin.getAuthMeCompatBridge().callRegister(player);
                         plugin.forceAuthenticate(player);
+                        plugin.getBedrockTrust().rememberVerified(player);
 
                         ChatUtil.sendConsoleInfo(player.getName() + " has registered successfully.");
                         ChatUtil.sendMessage(player, plugin.getLangFile().getMessages().getRegister().getSuccess());
 
-                        if (plugin.getConfigFile().getSettings().getSendAfterAuth().isEnabled()) {
-                            plugin.getFoliaLib().getScheduler().runLater(() -> {
-                                plugin.sendPlayerToServer(player,
-                                        plugin.getConfigFile().getSettings().getSendAfterAuth().getServer());
-                            }, 20L);
-                        }
+                        plugin.sendAfterAuth(player);
                     } else {
                         plugin.getAltAccountManager().cancelRegistration(
                                 registrationDecision.getReservationToken());

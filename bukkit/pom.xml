@@ -10,7 +10,7 @@
     <modelVersion>4.0.0</modelVersion>
 
     <artifactId>leaderos-auth-bukkit</artifactId>
-    <version>1.0.6-siberanka</version>
+    <version>1.1.0-siberanka</version>
     <packaging>jar</packaging>
 
     <properties>

@@ -7,6 +7,7 @@ import net.leaderos.auth.bukkit.helpers.ChatUtil;
 import net.leaderos.auth.bukkit.helpers.LocationUtil;
 import net.leaderos.auth.bukkit.helpers.TitleUtil;
 import net.leaderos.auth.bukkit.helpers.BedrockFormManager;
+import net.leaderos.auth.bukkit.helpers.BedrockSupport;
 import net.leaderos.auth.shared.Shared;
 import net.leaderos.auth.shared.enums.SessionState;
 import net.leaderos.auth.shared.helpers.Placeholder;
@@ -55,10 +56,19 @@ public class JoinListener implements Listener {
             GameSessionResponse session = plugin.getSessions().get(player.getName());
 
             // Clear any stale Bedrock form locks from previous server visit
-            BedrockFormManager.cleanup(player);
+            BedrockSupport.cleanup(player);
+
+            boolean xboxTrusted = false;
+            if (!session.isAuthenticated() && plugin.getBedrockTrust().tryTrust(player, session)) {
+                session.setState(SessionState.AUTHENTICATED);
+                xboxTrusted = true;
+                ChatUtil.sendConsoleInfo(player.getName() + " logged in with the Xbox account bound to it.");
+            }
 
             if (session.isAuthenticated()) {
-                ChatUtil.sendMessage(player, plugin.getLangFile().getMessages().getLogin().getSuccess());
+                ChatUtil.sendMessage(player, xboxTrusted
+                        ? plugin.getLangFile().getMessages().getLogin().getBedrockTrusted()
+                        : plugin.getLangFile().getMessages().getLogin().getSuccess());
                 plugin.getAuthMeCompatBridge().callLogin(player);
 
                 String ip = player.getAddress() != null ? player.getAddress().getAddress().getHostAddress() : "";
@@ -67,15 +77,10 @@ public class JoinListener implements Listener {
                 }
 
                 plugin.getFoliaLib().getScheduler().runLater(() -> {
-                    plugin.sendStatus(player, true);
+                    plugin.sendStatus(player);
                 }, 5);
 
-                if (plugin.getConfigFile().getSettings().getSendAfterAuth().isEnabled()) {
-                    plugin.getFoliaLib().getScheduler().runLater(() -> {
-                        plugin.sendPlayerToServer(player,
-                                plugin.getConfigFile().getSettings().getSendAfterAuth().getServer());
-                    }, 20L);
-                }
+                plugin.sendAfterAuth(player);
                 return;
             }
 
@@ -184,7 +189,7 @@ public class JoinListener implements Listener {
             }, 10L, 20L);
 
             plugin.getFoliaLib().getScheduler().runLater(() -> {
-                plugin.sendStatus(player, session.isAuthenticated());
+                plugin.sendStatus(player);
                 if (!session.isAuthenticated()) {
                     plugin.getAuthMeCompatBridge().broadcastUnauthenticated(player);
                 }
@@ -194,7 +199,7 @@ public class JoinListener implements Listener {
             // authenticate
             if (plugin.getConfigFile().getSettings().getBedrock().isEnabled()
                     && !session.isAuthenticated()
-                    && BedrockFormManager.isBedrockPlayer(player)) {
+                    && BedrockSupport.isBedrockPlayer(player)) {
                 long delay = plugin.getConfigFile().getSettings().getBedrock().getFormDelay();
                 plugin.getFoliaLib().getScheduler().runLater(() -> {
                     if (player.isOnline() && !plugin.isAuthenticated(player)) {

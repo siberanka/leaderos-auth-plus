@@ -91,7 +91,11 @@ public class Config extends OkaeriConfig {
                 })
                 private RegisterSecondArg registerSecondArg = RegisterSecondArg.PASSWORD_CONFIRM;
 
-                @Comment("Send players to another server after login/register")
+                @Comment({
+                                "Send players to another server after login/register (BungeeCord/Velocity).",
+                                "When return-to-requested-server is enabled on the proxy, a player who was held on the",
+                                "auth server goes back to the server it originally asked for; this server is the fallback."
+                })
                 private SendAfterAuth sendAfterAuth = new SendAfterAuth();
 
                 @Getter
@@ -102,6 +106,40 @@ public class Config extends OkaeriConfig {
 
                         @Comment("Name of the server to send player to after authentication")
                         private String server = "lobby";
+                }
+
+                @Comment({
+                                "Messages this server sends to LeaderOS Auth on BungeeCord/Velocity (login status,",
+                                "send-after-auth) are signed (HMAC-SHA256, timestamp, single-use nonce).",
+                                "The proxy refuses unsigned or forged messages by default."
+                })
+                private ProxyMessaging proxyMessaging = new ProxyMessaging();
+
+                @Getter
+                @Setter
+                public static class ProxyMessaging extends OkaeriConfig {
+                        @Comment({
+                                        "Shared secret (16+ characters). Use the same value as messaging.secret on the proxy.",
+                                        "Empty: reuse the secret this server already shares with the proxy - Paper's Velocity",
+                                        "forwarding secret (config/paper-global.yml) or the first BungeeGuard allowed token.",
+                                        "Never publish this value."
+                        })
+                        private String secret = "";
+                }
+
+                @Comment("AuthMe compatibility bridge")
+                private AuthmeBridge authmeBridge = new AuthmeBridge();
+
+                @Getter
+                @Setter
+                public static class AuthmeBridge extends OkaeriConfig {
+                        @Comment({
+                                        "Accept 'AuthMe.v2 perform.login' messages from AuthMeBungee/AuthMeVelocity?",
+                                        "Such a message logs a player in without a password. It is only ever accepted while",
+                                        "this server runs behind a proxy (BungeeCord forwarding or Paper Velocity forwarding),",
+                                        "because without a proxy any client could send it. Keep false unless you need it."
+                        })
+                        private boolean acceptProxyLogin = false;
                 }
 
                 @Comment({
@@ -235,6 +273,18 @@ public class Config extends OkaeriConfig {
 
                         @Comment("Delay in ticks before sending the auth form after joining (20 ticks = 1 second)")
                         private long formDelay = 40;
+
+                        @Comment({
+                                        "Log Bedrock players in without a password when the account is bound to their Xbox",
+                                        "account (XUID). An account is bound when a Floodgate player registers or logs in with",
+                                        "its password (and TFA); another Xbox account can never take over a binding.",
+                                        "Checked through the Floodgate API, never by name prefix. Requires Floodgate here.",
+                                        "A trusted login skips the password and the TFA prompt: Xbox Live sign-in is the factor."
+                        })
+                        private boolean trustXbox = false;
+
+                        @Comment("Days a binding stays trusted after the last password login (1-365)")
+                        private int trustMaxAgeDays = 30;
                 }
 
                 @Comment("Database connection settings")

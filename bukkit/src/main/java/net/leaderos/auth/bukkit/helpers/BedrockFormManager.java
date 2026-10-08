@@ -16,10 +16,6 @@ import org.geysermc.cumulus.form.CustomForm;
 import org.geysermc.cumulus.response.CustomFormResponse;
 import org.geysermc.floodgate.api.FloodgateApi;
 
-import java.util.Collections;
-import java.util.Set;
-import java.util.UUID;
-import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * Manages Bedrock/Floodgate form-based authentication.
@@ -28,29 +24,12 @@ import java.util.concurrent.ConcurrentHashMap;
  */
 public class BedrockFormManager {
 
-    private static final Set<UUID> pendingForms = Collections.newSetFromMap(new ConcurrentHashMap<>());
     private static final long FORM_COOLDOWN_MS = 2000L;
-    private static final ConcurrentHashMap<UUID, Long> lastSubmitTime = new ConcurrentHashMap<>();
 
-    public static boolean isFloodgateAvailable() {
-        try {
-            Class.forName("org.geysermc.floodgate.api.FloodgateApi");
-            return org.bukkit.Bukkit.getPluginManager().getPlugin("floodgate") != null;
-        } catch (ClassNotFoundException e) {
-            return false;
-        }
-    }
-
-    public static boolean isBedrockPlayer(Player player) {
-        if (!isFloodgateAvailable())
-            return false;
-        try {
-            return FloodgateApi.getInstance().isFloodgatePlayer(player.getUniqueId());
-        } catch (Exception e) {
-            return false;
-        }
-    }
-
+    /**
+     * Only call after {@link BedrockSupport#isBedrockPlayer(Player)} returned true: this class needs
+     * Floodgate's form library.
+     */
     public static void sendAuthForm(Player player) {
         Bukkit plugin = Bukkit.getInstance();
         GameSessionResponse session = plugin.getSessions().get(player.getName());
@@ -134,15 +113,11 @@ public class BedrockFormManager {
                                     ChatUtil.sendMessage(player,
                                             plugin.getLangFile().getMessages().getLogin().getSuccess());
                                     plugin.forceAuthenticate(player);
+                                    plugin.getBedrockTrust().rememberVerified(player);
 
                                     plugin.getAltAccountManager().processPlayerRecord(player, ip);
 
-                                    if (plugin.getConfigFile().getSettings().getSendAfterAuth().isEnabled()) {
-                                        plugin.getFoliaLib().getScheduler().runLater(() -> {
-                                            plugin.sendPlayerToServer(player, plugin.getConfigFile().getSettings()
-                                                    .getSendAfterAuth().getServer());
-                                        }, 20L);
-                                    }
+                                    plugin.sendAfterAuth(player);
                                 }
                             } else if (result.getError() == ErrorCode.USER_NOT_FOUND) {
                                 ChatUtil.sendMessage(player,
@@ -319,16 +294,12 @@ public class BedrockFormManager {
 
                         plugin.getAuthMeCompatBridge().callRegister(player);
                         plugin.forceAuthenticate(player);
+                        plugin.getBedrockTrust().rememberVerified(player);
 
                         ChatUtil.sendConsoleInfo(player.getName() + " has registered successfully.");
                         ChatUtil.sendMessage(player, plugin.getLangFile().getMessages().getRegister().getSuccess());
 
-                        if (plugin.getConfigFile().getSettings().getSendAfterAuth().isEnabled()) {
-                            plugin.getFoliaLib().getScheduler().runLater(() -> {
-                                plugin.sendPlayerToServer(player,
-                                        plugin.getConfigFile().getSettings().getSendAfterAuth().getServer());
-                            }, 20L);
-                        }
+                        plugin.sendAfterAuth(player);
                     } else {
                         plugin.getAltAccountManager().cancelRegistration(
                                 registrationDecision.getReservationToken());
@@ -440,14 +411,10 @@ public class BedrockFormManager {
                                 ChatUtil.sendConsoleInfo(
                                         player.getName() + " has completed TFA verification successfully.");
                                 plugin.forceAuthenticate(player);
+                                plugin.getBedrockTrust().rememberVerified(player);
                                 plugin.getAltAccountManager().processPlayerRecord(player, ip);
 
-                                if (plugin.getConfigFile().getSettings().getSendAfterAuth().isEnabled()) {
-                                    plugin.getFoliaLib().getScheduler().runLater(() -> {
-                                        plugin.sendPlayerToServer(player,
-                                                plugin.getConfigFile().getSettings().getSendAfterAuth().getServer());
-                                    }, 20L);
-                                }
+                                plugin.sendAfterAuth(player);
                             } else if (result.getError() == ErrorCode.WRONG_CODE) {
                                 ChatUtil.sendMessage(player,
                                         plugin.getLangFile().getMessages().getTfa().getInvalidCode());
@@ -487,25 +454,20 @@ public class BedrockFormManager {
     }
 
     private static boolean acquireFormLock(Player player) {
-        return pendingForms.add(player.getUniqueId());
+        return BedrockSupport.PENDING_FORMS.add(player.getUniqueId());
     }
 
     private static void releaseFormLock(Player player) {
-        pendingForms.remove(player.getUniqueId());
+        BedrockSupport.PENDING_FORMS.remove(player.getUniqueId());
     }
 
     private static boolean checkCooldown(Player player) {
         long now = System.currentTimeMillis();
-        Long last = lastSubmitTime.get(player.getUniqueId());
+        Long last = BedrockSupport.LAST_SUBMIT.get(player.getUniqueId());
         if (last != null && (now - last) < FORM_COOLDOWN_MS) {
             return false;
         }
-        lastSubmitTime.put(player.getUniqueId(), now);
+        BedrockSupport.LAST_SUBMIT.put(player.getUniqueId(), now);
         return true;
-    }
-
-    public static void cleanup(Player player) {
-        pendingForms.remove(player.getUniqueId());
-        lastSubmitTime.remove(player.getUniqueId());
     }
 }

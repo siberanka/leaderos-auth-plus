@@ -76,6 +76,10 @@ public class Language extends OkaeriConfig {
 
         private String alreadyLoggedIn = "{prefix} &cYou are already logged in!";
 
+        private String bedrockUnlinked = "{prefix} &aBedrock (Xbox) login trust removed for &e{player}&a.";
+
+        private String bedrockNotLinked = "{prefix} &e{player} &chas no Bedrock (Xbox) login trust.";
+
         private Register register = new Register();
         private Login login = new Login();
         private Tfa tfa = new Tfa();
@@ -141,6 +145,8 @@ public class Language extends OkaeriConfig {
             private String accountNotFound = "{prefix} &cYou are not registered!";
 
             private String success = "{prefix} &aYou have successfully logged in!";
+
+            private String bedrockTrusted = "{prefix} &aLogged in automatically with the Xbox account bound to this account.";
 
         }
 

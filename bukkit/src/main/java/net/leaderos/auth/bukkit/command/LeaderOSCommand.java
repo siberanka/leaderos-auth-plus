@@ -9,6 +9,8 @@ import net.leaderos.auth.bukkit.Bukkit;
 import net.leaderos.auth.bukkit.helpers.ChatUtil;
 import net.leaderos.auth.bukkit.helpers.LocationUtil;
 import net.leaderos.auth.shared.Shared;
+import net.leaderos.auth.shared.helpers.Placeholder;
+import net.leaderos.auth.shared.security.BedrockLinkStore;
 import net.leaderos.auth.shared.helpers.UrlUtil;
 import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
@@ -30,8 +32,27 @@ public class LeaderOSCommand extends BaseCommand {
 
         Shared.setLink(UrlUtil.format(Bukkit.getInstance().getConfigFile().getSettings().getUrl()));
         Shared.setApiKey(Bukkit.getInstance().getConfigFile().getSettings().getApiKey());
+        Bukkit.getInstance().getProxyMessenger().reload();
 
         ChatUtil.sendMessage(sender, Bukkit.getInstance().getLangFile().getMessages().getReload());
+    }
+
+    /**
+     * Removes the Bedrock (Xbox) login trust of an account, e.g. after the owner changed Xbox accounts
+     * or the password was reset.
+     */
+    @Permission("leaderos.bedrock.unlink")
+    @SubCommand("unlinkbedrock")
+    public void unlinkBedrockCommand(CommandSender sender, String playerName) {
+        Bukkit plugin = Bukkit.getInstance();
+        plugin.getFoliaLib().getScheduler().runAsync((task) -> {
+            BedrockLinkStore store = plugin.getDatabase() == null ? null : plugin.getDatabase().getBedrockLinkStore();
+            boolean removed = store != null && store.unbind(playerName);
+            String message = removed ? plugin.getLangFile().getMessages().getBedrockUnlinked()
+                    : plugin.getLangFile().getMessages().getBedrockNotLinked();
+            ChatUtil.sendMessage(sender, ChatUtil.replacePlaceholders(message,
+                    new Placeholder("{player}", playerName)));
+        });
     }
 
     /**

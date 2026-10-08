@@ -1,70 +1,53 @@
 package net.leaderos.auth.bungee.listener;
 
-import lombok.RequiredArgsConstructor;
 import net.leaderos.auth.bungee.Bungee;
+import net.leaderos.auth.shared.security.IpAddressNormalizer;
+import net.leaderos.auth.shared.security.IpConnectionTracker;
 import net.md_5.bungee.api.ChatColor;
 import net.md_5.bungee.api.chat.TextComponent;
+import net.md_5.bungee.api.connection.ProxiedPlayer;
+import net.md_5.bungee.api.event.LoginEvent;
 import net.md_5.bungee.api.event.PlayerDisconnectEvent;
+import net.md_5.bungee.api.event.PostLoginEvent;
 import net.md_5.bungee.api.event.PreLoginEvent;
 import net.md_5.bungee.api.plugin.Listener;
 import net.md_5.bungee.event.EventHandler;
 import net.md_5.bungee.event.EventPriority;
 
-import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
+import java.net.InetSocketAddress;
+import java.util.ArrayList;
+import java.util.List;
 
-@RequiredArgsConstructor
+/**
+ * Limits concurrent connections per IP address. Online players are counted live from the proxy;
+ * only logins in progress are tracked (see {@link IpConnectionTracker}), so server switches never
+ * count twice and failed logins never leak a slot.
+ */
 public class IpConnectionLimitListener implements Listener {
+
     private final Bungee plugin;
-    private final Map<String, Integer> ipConnections = new ConcurrentHashMap<>();
-    private final Map<String, Long> lastJoinTime = new ConcurrentHashMap<>();
+    private final IpConnectionTracker tracker = new IpConnectionTracker(30_000L);
+
+    public IpConnectionLimitListener(Bungee plugin) {
+        this.plugin = plugin;
+    }
 
     @EventHandler(priority = EventPriority.HIGHEST)
     public void onJoin(PreLoginEvent event) {
-        // Ignore if max connections per IP is not enabled
-        if (plugin.getConfigFile().getSettings().getMaxJoinPerIP() <= 0)
+        int maxPerIP = plugin.getConfigFile().getSettings().getMaxJoinPerIP();
+        if (maxPerIP <= 0 || event.isCancelled() || !(event.getConnection().getSocketAddress() instanceof InetSocketAddress))
             return;
 
-        String ip = event.getConnection().getAddress().getAddress().getHostAddress();
-        int maxPerIP = plugin.getConfigFile().getSettings().getMaxJoinPerIP();
-
-        // Atomically check and verify the connection count
-        boolean[] denied = { false };
-        ipConnections.compute(ip, (k, current) -> {
-            int count = current == null ? 0 : current;
-            long now = System.currentTimeMillis();
-            long last = lastJoinTime.getOrDefault(ip, 0L);
-
-            // If count is within limit, just increment (O(1) operation)
-            if (count < maxPerIP) {
-                lastJoinTime.put(ip, now);
-                return count + 1;
+        String ip = ((InetSocketAddress) event.getConnection().getSocketAddress()).getAddress().getHostAddress();
+        List<String> online = new ArrayList<>();
+        for (ProxiedPlayer player : plugin.getProxy().getPlayers()) {
+            if (player.getSocketAddress() instanceof InetSocketAddress && IpAddressNormalizer.sameAddress(
+                    ((InetSocketAddress) player.getSocketAddress()).getAddress().getHostAddress(), ip)) {
+                online.add(player.getName());
             }
+        }
 
-            // Limit reached? Check if we are in the "strict window" to prevent race condition bypass
-            if (now - last > 3000) {
-                // Window expired, we can trust a new scan to self-heal
-                long actualOnlineCount = plugin.getProxy().getPlayers().stream()
-                        .filter(p -> p.getAddress().getAddress().getHostAddress().equals(ip))
-                        .count();
-
-                if (actualOnlineCount < maxPerIP) {
-                    // It was a leak! Allow the connection.
-                    lastJoinTime.put(ip, now);
-                    return (int) actualOnlineCount + 1;
-                }
-
-                // Still over limit
-                denied[0] = true;
-                return (int) actualOnlineCount;
-            }
-
-            // Inside strict window: Deny immediately to prevent simultaneous join bypass
-            denied[0] = true;
-            return count;
-        });
-
-        if (denied[0]) {
+        if (!tracker.tryAdmit(event.getConnection().getName(), ip, maxPerIP, online, System.currentTimeMillis())) {
             event.setCancelReason(new TextComponent(
                     ChatColor.translateAlternateColorCodes('&',
                             plugin.getConfigFile().getSettings().getKickMaxConnectionsPerIP())));
@@ -72,20 +55,27 @@ public class IpConnectionLimitListener implements Listener {
         }
     }
 
+    @EventHandler(priority = (byte) 127)
+    public void onPreLoginResult(PreLoginEvent event) {
+        if (event.isCancelled()) {
+            tracker.release(event.getConnection().getName());
+        }
+    }
+
+    @EventHandler(priority = (byte) 127)
+    public void onLoginResult(LoginEvent event) {
+        if (event.isCancelled()) {
+            tracker.release(event.getConnection().getName());
+        }
+    }
+
+    @EventHandler
+    public void onPostLogin(PostLoginEvent event) {
+        tracker.joined(event.getPlayer().getName());
+    }
+
     @EventHandler
     public void onDisconnect(PlayerDisconnectEvent event) {
-        // Ignore if max connections per IP is not enabled
-        if (plugin.getConfigFile().getSettings().getMaxJoinPerIP() <= 0)
-            return;
-
-        // Decrease the connection count for the IP
-        String ip = event.getPlayer().getAddress().getAddress().getHostAddress();
-        ipConnections.computeIfPresent(ip, (k, v) -> {
-            if (v <= 1) {
-                lastJoinTime.remove(ip);
-                return null;
-            }
-            return v - 1;
-        });
+        tracker.release(event.getPlayer().getName());
     }
 }

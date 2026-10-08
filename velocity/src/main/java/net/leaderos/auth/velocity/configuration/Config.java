@@ -107,6 +107,50 @@ public class Config extends OkaeriConfig {
                 @Comment("Should the title messages be shown to players?")
                 private boolean showTitle = true;
 
+                @Comment({
+                                "Messages from LeaderOS Auth on backend servers (login status, send-after-auth), if any",
+                                "backend runs it, are signed (HMAC-SHA256, timestamp, single-use nonce)."
+                })
+                private Messaging messaging = new Messaging();
+
+                @Getter
+                @Setter
+                public static class Messaging extends OkaeriConfig {
+                        @Comment({
+                                        "Shared secret (16+ characters); the same value as proxy-messaging.secret on the backends.",
+                                        "Empty: use the Velocity forwarding secret (modern/bungeeguard forwarding). Never publish it."
+                        })
+                        private String secret = "";
+                }
+
+                @Comment("Bedrock (Floodgate) settings")
+                private Bedrock bedrock = new Bedrock();
+
+                @Getter
+                @Setter
+                public static class Bedrock extends OkaeriConfig {
+                        @Comment({
+                                        "Show login/register/TFA forms to Bedrock players in the auth limbo.",
+                                        "Requires Floodgate on this proxy."
+                        })
+                        private boolean forms = true;
+
+                        @Comment("Delay before the first form is shown (milliseconds)")
+                        private long formDelayMillis = 2000L;
+
+                        @Comment({
+                                        "Log Bedrock players in without a password when the account is bound to their Xbox",
+                                        "account (XUID). An account is bound when a Floodgate player registers or logs in with",
+                                        "its password (and TFA); another Xbox account can never take over a binding.",
+                                        "Checked through the Floodgate API, never by name prefix.",
+                                        "A trusted login skips the password and the TFA prompt: Xbox Live sign-in is the factor."
+                        })
+                        private boolean trustXbox = false;
+
+                        @Comment("Days a binding stays trusted after the last password login (1-365)")
+                        private int trustMaxAgeDays = 30;
+                }
+
                 @Comment("Bossbar settings")
                 private BossBar bossBar = new BossBar();
 

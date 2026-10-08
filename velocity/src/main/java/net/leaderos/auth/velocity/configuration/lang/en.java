@@ -75,11 +75,16 @@ public class en extends Language {
 
                 private String alreadyAuthenticated = "{prefix} &cYou are already authenticated!";
 
+                private String bedrockUnlinked = "{prefix} &aBedrock (Xbox) login trust removed for &e{player}&a.";
+
+                private String bedrockNotLinked = "{prefix} &e{player} &chas no Bedrock (Xbox) login trust.";
+
                 private Register register = new Register();
                 private Login login = new Login();
                 private Tfa tfa = new Tfa();
                 private Alt alt = new Alt();
                 private Discord discord = new Discord();
+                private BedrockForms bedrockForms = new BedrockForms();
 
                 /**
                  * Command object
@@ -140,6 +145,8 @@ public class en extends Language {
 
                         private String success = "{prefix} &aYou have successfully logged in!";
 
+                        private String bedrockTrusted = "{prefix} &aLogged in automatically with the Xbox account bound to this account.";
+
                 }
 
                 @Getter
@@ -186,6 +193,44 @@ public class en extends Language {
                         private String cmdDeletedSingular = "&6{amount} record deleted.";
                         private String cmdDeletedPlural = "&6{amount} records deleted.";
                         private String cmdDeletedNotFound = "&c{player} has no records to delete.";
+                }
+
+                @Getter
+                @Setter
+                public static class BedrockForms extends Language.Messages.BedrockForms {
+
+                        private LoginForm loginForm = new LoginForm();
+                        private RegisterForm registerForm = new RegisterForm();
+                        private TfaForm tfaForm = new TfaForm();
+
+                        @Getter
+                        @Setter
+                        public static class LoginForm extends Language.Messages.BedrockForms.LoginForm {
+                                private String title = "Login";
+                                private String description = "Please enter your password to log in.";
+                                private String passwordLabel = "Password";
+                                private String submitButton = "Login";
+                        }
+
+                        @Getter
+                        @Setter
+                        public static class RegisterForm extends Language.Messages.BedrockForms.RegisterForm {
+                                private String title = "Register";
+                                private String description = "Please create a password to register.";
+                                private String passwordLabel = "Password";
+                                private String confirmPasswordLabel = "Confirm Password";
+                                private String emailLabel = "Email";
+                                private String submitButton = "Register";
+                        }
+
+                        @Getter
+                        @Setter
+                        public static class TfaForm extends Language.Messages.BedrockForms.TfaForm {
+                                private String title = "Two-Factor Authentication";
+                                private String description = "Please enter your TFA code.";
+                                private String codeLabel = "TFA Code";
+                                private String submitButton = "Verify";
+                        }
                 }
 
                 @Getter

@@ -73,11 +73,16 @@ public class tr extends Language {
 
                 private String alreadyAuthenticated = "{prefix} &cZaten giriş yaptınız!";
 
+                private String bedrockUnlinked = "{prefix} &e{player} &aiçin Bedrock (Xbox) giriş güveni kaldırıldı.";
+
+                private String bedrockNotLinked = "{prefix} &e{player} &cadlı hesabın Bedrock (Xbox) giriş güveni yok.";
+
                 private Register register = new Register();
                 private Login login = new Login();
                 private Tfa tfa = new Tfa();
                 private Alt alt = new Alt();
                 private Discord discord = new Discord();
+                private BedrockForms bedrockForms = new BedrockForms();
 
                 /**
                  * Command object
@@ -138,6 +143,8 @@ public class tr extends Language {
 
                         private String success = "{prefix} &aBaşarıyla giriş yaptınız!";
 
+                        private String bedrockTrusted = "{prefix} &aBu hesaba bağlı Xbox hesabınızla otomatik giriş yapıldı.";
+
                 }
 
                 @Getter
@@ -184,6 +191,44 @@ public class tr extends Language {
                         private String cmdDeletedSingular = "&6{amount} kayıt silindi";
                         private String cmdDeletedPlural = "&6{amount} kayıt silindi";
                         private String cmdDeletedNotFound = "&c{player} için silinecek kayıt bulunamadı";
+                }
+
+                @Getter
+                @Setter
+                public static class BedrockForms extends Language.Messages.BedrockForms {
+
+                        private LoginForm loginForm = new LoginForm();
+                        private RegisterForm registerForm = new RegisterForm();
+                        private TfaForm tfaForm = new TfaForm();
+
+                        @Getter
+                        @Setter
+                        public static class LoginForm extends Language.Messages.BedrockForms.LoginForm {
+                                private String title = "Giriş";
+                                private String description = "Lütfen giriş yapmak için şifrenizi girin.";
+                                private String passwordLabel = "Şifre";
+                                private String submitButton = "Giriş Yap";
+                        }
+
+                        @Getter
+                        @Setter
+                        public static class RegisterForm extends Language.Messages.BedrockForms.RegisterForm {
+                                private String title = "Kayıt";
+                                private String description = "Lütfen kayıt olmak için bir şifre oluşturun.";
+                                private String passwordLabel = "Şifre";
+                                private String confirmPasswordLabel = "Şifre Tekrar";
+                                private String emailLabel = "E-posta";
+                                private String submitButton = "Kayıt Ol";
+                        }
+
+                        @Getter
+                        @Setter
+                        public static class TfaForm extends Language.Messages.BedrockForms.TfaForm {
+                                private String title = "İki Faktörlü Doğrulama";
+                                private String description = "Lütfen TFA kodunuzu girin.";
+                                private String codeLabel = "TFA Kodu";
+                                private String submitButton = "Doğrula";
+                        }
                 }
 
                 @Getter

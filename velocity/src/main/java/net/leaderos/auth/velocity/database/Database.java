@@ -3,6 +3,7 @@ package net.leaderos.auth.velocity.database;
 import com.zaxxer.hikari.HikariDataSource;
 import org.slf4j.Logger;
 import net.leaderos.auth.shared.security.RegistrationDecision;
+import net.leaderos.auth.shared.security.BedrockLinkStore;
 import net.leaderos.auth.shared.security.RegistrationSecurityStore;
 
 import java.sql.Connection;
@@ -18,6 +19,7 @@ public abstract class Database {
     protected String prefix;
     protected boolean debug;
     protected RegistrationSecurityStore registrationSecurityStore;
+    protected BedrockLinkStore bedrockLinkStore;
     protected int ipv6PrefixLength = 64;
 
     protected String initPlayer;
@@ -58,11 +60,30 @@ public abstract class Database {
                             logger.error(message, throwable);
                         }
                     });
-            return registrationSecurityStore.initialize();
+            if (!registrationSecurityStore.initialize()) {
+                return false;
+            }
+            initializeBedrockLinks(dialect);
+            return true;
         } catch (RuntimeException exception) {
             logger.error("Invalid registration security database configuration: " + exception.getMessage());
             return false;
         }
+    }
+
+    private void initializeBedrockLinks(RegistrationSecurityStore.Dialect dialect) {
+        BedrockLinkStore store = new BedrockLinkStore(dataSource, prefix, dialect,
+                (message, throwable) -> logger.error(message
+                        + (throwable != null ? ": " + throwable.getMessage() : "")));
+        // Without the table Bedrock trust stays off; logins keep working with passwords.
+        bedrockLinkStore = store.initialize() ? store : null;
+    }
+
+    /**
+     * @return the Bedrock (XUID) link store, or null when it could not be initialized
+     */
+    public BedrockLinkStore getBedrockLinkStore() {
+        return bedrockLinkStore;
     }
 
     public RegistrationDecision reserveRegistration(String ip, String playerName, int maximumAccounts,

@@ -3,6 +3,7 @@ package net.leaderos.auth.bukkit.database;
 import com.zaxxer.hikari.HikariDataSource;
 import net.leaderos.auth.bukkit.Bukkit;
 import net.leaderos.auth.shared.security.RegistrationDecision;
+import net.leaderos.auth.shared.security.BedrockLinkStore;
 import net.leaderos.auth.shared.security.RegistrationSecurityStore;
 
 import java.sql.Connection;
@@ -18,6 +19,7 @@ public abstract class Database {
     protected String prefix;
     protected boolean debug;
     protected RegistrationSecurityStore registrationSecurityStore;
+    protected BedrockLinkStore bedrockLinkStore;
 
     // Queries to be set by implementations
     protected String initPlayer;
@@ -57,12 +59,31 @@ public abstract class Database {
                             throwable.printStackTrace();
                         }
                     });
-            return registrationSecurityStore.initialize();
+            if (!registrationSecurityStore.initialize()) {
+                return false;
+            }
+            initializeBedrockLinks(dialect);
+            return true;
         } catch (RuntimeException exception) {
             plugin.getLogger().severe("Invalid registration security database configuration: "
                     + exception.getMessage());
             return false;
         }
+    }
+
+    private void initializeBedrockLinks(RegistrationSecurityStore.Dialect dialect) {
+        BedrockLinkStore store = new BedrockLinkStore(dataSource, prefix, dialect,
+                (message, throwable) -> plugin.getLogger().severe(message
+                        + (throwable != null ? ": " + throwable.getMessage() : "")));
+        // Without the table Bedrock trust stays off; logins keep working with passwords.
+        bedrockLinkStore = store.initialize() ? store : null;
+    }
+
+    /**
+     * @return the Bedrock (XUID) link store, or null when it could not be initialized
+     */
+    public BedrockLinkStore getBedrockLinkStore() {
+        return bedrockLinkStore;
     }
 
     public RegistrationDecision reserveRegistration(String ip, String playerName, int maximumAccounts,

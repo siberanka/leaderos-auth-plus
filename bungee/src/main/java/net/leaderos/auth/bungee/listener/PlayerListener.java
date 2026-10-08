@@ -3,6 +3,8 @@ package net.leaderos.auth.bungee.listener;
 import lombok.RequiredArgsConstructor;
 import net.leaderos.auth.bungee.Bungee;
 import net.leaderos.auth.shared.Shared;
+import net.leaderos.auth.shared.proxy.RequestedServers;
+import net.md_5.bungee.api.config.ServerInfo;
 import net.md_5.bungee.api.connection.ProxiedPlayer;
 import net.md_5.bungee.api.event.ChatEvent;
 import net.md_5.bungee.api.event.PlayerDisconnectEvent;
@@ -21,8 +23,7 @@ public class PlayerListener implements Listener {
 
     @EventHandler
     public void onQuit(PlayerDisconnectEvent event) {
-        ProxiedPlayer player = event.getPlayer();
-        plugin.getAuthenticatedPlayers().remove(player.getName());
+        plugin.forget(event.getPlayer());
     }
 
     @EventHandler
@@ -34,7 +35,7 @@ public class PlayerListener implements Listener {
 
         ProxiedPlayer player = (ProxiedPlayer) event.getSender();
         String command = event.getMessage().substring(1).split(" ")[0].toLowerCase();
-        if (plugin.getAuthenticatedPlayers().getOrDefault(player.getName(), false))
+        if (plugin.isAuthenticated(player))
             return;
 
         if (!plugin.getConfigFile().getSettings().getAllowedCommands().contains(command)) {
@@ -50,25 +51,53 @@ public class PlayerListener implements Listener {
             return;
 
         ProxiedPlayer player = (ProxiedPlayer) event.getSender();
-        if (plugin.getAuthenticatedPlayers().getOrDefault(player.getName(), false))
+        if (plugin.isAuthenticated(player))
             return;
 
         event.setCancelled(true);
     }
 
+    /**
+     * Runs after every other plugin (priority 127) so the target it sees is the final one, e.g. the
+     * server twilight-proxy routed a reconnected Bedrock player to. Unauthenticated players are held on
+     * the auth server; the server they asked for is remembered and they return to it after the login.
+     */
     @EventHandler(priority = (byte) 127)
     public void onConnect(ServerConnectEvent event) {
+        if (event.isCancelled())
+            return;
+
         ProxiedPlayer player = event.getPlayer();
-        if (plugin.getAuthenticatedPlayers().getOrDefault(player.getName(), false))
+        if (isJoin(event)) {
+            plugin.getSessionListener().applyFirstConnection(player);
+        }
+        if (plugin.isAuthenticated(player))
             return;
 
         String authServer = plugin.getConfigFile().getSettings().getAuthServer();
-        if (event.getTarget().getName().equals(authServer))
+        ServerInfo target = event.getTarget();
+        if (target != null && RequestedServers.isAuthServer(target.getName(), authServer))
             return;
 
+        ServerInfo auth = plugin.getProxy().getServerInfo(authServer);
+        if (auth == null) {
+            // Fail closed: without the auth server an unauthenticated player may not go anywhere.
+            Shared.getDebugAPI().send("Auth server '" + authServer + "' does not exist; refusing to connect "
+                    + player.getName() + " anywhere else.", true);
+            event.setCancelled(true);
+            return;
+        }
+
+        // The proxy's default server is not a choice of the player; send-after-auth decides as before.
+        if (target != null && plugin.getConfigFile().getSettings().isReturnToRequestedServer()
+                && !isDefaultServer(player, target)) {
+            plugin.getReturnRouter().getRequested().remember(player.getUniqueId(), target.getName(),
+                    System.currentTimeMillis());
+        }
+
         Shared.getDebugAPI().send("Player tried to connect to a server different than the auth server. " +
-                "Redirecting player " + player.getName() + " to auth server: " + authServer, true);
-        event.setTarget(plugin.getProxy().getServerInfo(authServer));
+                "Redirecting player " + player.getName() + " to auth server: " + authServer, false);
+        event.setTarget(auth);
     }
 
     @EventHandler
@@ -81,7 +110,7 @@ public class PlayerListener implements Listener {
             return;
 
         ProxiedPlayer player = (ProxiedPlayer) event.getSender();
-        if (plugin.getAuthenticatedPlayers().getOrDefault(player.getName(), false))
+        if (plugin.isAuthenticated(player))
             return;
 
         // Filter suggestions to only include allowed commands
@@ -100,6 +129,24 @@ public class PlayerListener implements Listener {
         } else {
             // Not a command, clear all suggestions
             event.getSuggestions().clear();
+        }
+    }
+
+    private static boolean isDefaultServer(ProxiedPlayer player, ServerInfo target) {
+        try {
+            List<String> priorities = player.getPendingConnection().getListener().getServerPriority();
+            return priorities != null && !priorities.isEmpty() && priorities.get(0).equalsIgnoreCase(target.getName());
+        } catch (RuntimeException | LinkageError unknown) {
+            return false;
+        }
+    }
+
+    /** First connection after joining the proxy (Reason exists on BungeeCord 1.13 and later). */
+    private static boolean isJoin(ServerConnectEvent event) {
+        try {
+            return event.getReason() == ServerConnectEvent.Reason.JOIN_PROXY;
+        } catch (NoSuchMethodError | NoClassDefFoundError older) {
+            return event.getPlayer().getServer() == null;
         }
     }
 

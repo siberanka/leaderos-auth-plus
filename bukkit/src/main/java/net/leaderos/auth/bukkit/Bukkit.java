@@ -1,8 +1,6 @@
 package net.leaderos.auth.bukkit;
 
 import com.google.common.collect.Lists;
-import com.google.common.io.ByteArrayDataOutput;
-import com.google.common.io.ByteStreams;
 import com.tcoded.folialib.FoliaLib;
 import dev.triumphteam.cmd.bukkit.BukkitCommandManager;
 import dev.triumphteam.cmd.bukkit.message.BukkitMessageKey;
@@ -24,12 +22,15 @@ import net.leaderos.auth.bukkit.helpers.ChatUtil;
 import net.leaderos.auth.bukkit.helpers.ConsoleLogger;
 import net.leaderos.auth.bukkit.helpers.DebugBukkit;
 import net.leaderos.auth.bukkit.helpers.AuthMeCompatBridge;
+import net.leaderos.auth.bukkit.helpers.BedrockTrust;
+import net.leaderos.auth.bukkit.helpers.ProxyMessenger;
 import net.leaderos.auth.bukkit.listener.*;
 import net.leaderos.auth.shared.Shared;
 import net.leaderos.auth.shared.enums.SessionState;
 import net.leaderos.auth.shared.helpers.Placeholder;
 import net.leaderos.auth.shared.helpers.PluginUpdater;
 import net.leaderos.auth.shared.helpers.UrlUtil;
+import net.leaderos.auth.shared.messaging.AuthChannel;
 import net.leaderos.auth.shared.model.response.GameSessionResponse;
 import org.bstats.bukkit.Metrics;
 import org.bukkit.command.CommandSender;
@@ -42,6 +43,7 @@ import org.apache.logging.log4j.core.Logger;
 import java.io.File;
 import java.util.List;
 import java.util.Map;
+import java.util.UUID;
 import java.util.logging.Level;
 
 @Getter
@@ -68,6 +70,15 @@ public class Bukkit extends JavaPlugin {
 
     @Getter
     private final Map<String, GameSessionResponse> sessions = new java.util.concurrent.ConcurrentHashMap<>();
+    /**
+     * Sessions fetched during the async pre-login, keyed by UUID. They move to {@link #sessions} when the
+     * player joins, so a reconnect that replaces an older connection of the same name can never have its
+     * session removed by the older connection's quit.
+     */
+    @Getter
+    private final Map<UUID, GameSessionResponse> pendingSessions = new java.util.concurrent.ConcurrentHashMap<>();
+    private ProxyMessenger proxyMessenger;
+    private BedrockTrust bedrockTrust;
     private AuthMeCompatBridge authMeCompatBridge;
     private AuthMePluginMessageListener authMePluginMessageListener;
 
@@ -101,6 +112,10 @@ public class Bukkit extends JavaPlugin {
         new Metrics(this, 26804);
 
         getServer().getMessenger().registerOutgoingPluginChannel(this, "BungeeCord");
+        getServer().getMessenger().registerOutgoingPluginChannel(this, AuthChannel.CHANNEL);
+        proxyMessenger = new ProxyMessenger(this);
+        proxyMessenger.reload();
+        bedrockTrust = new BedrockTrust(this);
         authMePluginMessageListener = new AuthMePluginMessageListener(this);
         getServer().getMessenger().registerIncomingPluginChannel(this, "BungeeCord", authMePluginMessageListener);
 
@@ -148,6 +163,7 @@ public class Bukkit extends JavaPlugin {
             getServer().getMessenger().unregisterIncomingPluginChannel(this, "BungeeCord", authMePluginMessageListener);
         }
         getServer().getMessenger().unregisterOutgoingPluginChannel(this, "BungeeCord");
+        getServer().getMessenger().unregisterOutgoingPluginChannel(this, AuthChannel.CHANNEL);
     }
 
     public void setupDatabase() {
@@ -230,6 +246,17 @@ public class Bukkit extends JavaPlugin {
         if (databaseConfig.getExpirationTime() < 0) {
             databaseConfig.setExpirationTime(0);
         }
+        Config.Settings.Bedrock bedrock = settings.getBedrock();
+        int trustMaxAge = Math.max(1, Math.min(365, bedrock.getTrustMaxAgeDays()));
+        if (trustMaxAge != bedrock.getTrustMaxAgeDays()) {
+            getLogger().warning("bedrock.trust-max-age-days must be between 1 and 365; using " + trustMaxAge + ".");
+            bedrock.setTrustMaxAgeDays(trustMaxAge);
+        }
+        String secret = settings.getProxyMessaging().getSecret();
+        if (secret != null && !secret.trim().isEmpty() && !AuthChannel.isUsableSecret(secret)) {
+            getLogger().warning("proxy-messaging.secret is shorter than " + AuthChannel.MIN_SECRET_LENGTH
+                    + " characters and is ignored.");
+        }
     }
 
     private <T extends eu.okaeri.configs.OkaeriConfig> T loadConfigWithRecovery(Class<T> configClass, File file) {
@@ -295,35 +322,35 @@ public class Bukkit extends JavaPlugin {
                 .sendMessage(sender, getLangFile().getMessages().getCommand().getNoPerm()));
     }
 
+    /**
+     * Asks the proxy to send an authenticated player to {@code server} (signed message).
+     */
     public void sendPlayerToServer(Player player, String server) {
-        ByteArrayDataOutput out = ByteStreams.newDataOutput();
-        out.writeUTF("Forward");
-        out.writeUTF("ONLINE");
-        out.writeUTF("losauth:connect");
-
-        ByteArrayDataOutput dataOut = ByteStreams.newDataOutput();
-        dataOut.writeUTF(player.getName());
-        dataOut.writeUTF(server);
-
-        byte[] dataBytes = dataOut.toByteArray();
-        out.writeShort(dataBytes.length);
-        out.write(dataBytes);
-
-        player.sendPluginMessage(this, "BungeeCord", out.toByteArray());
+        proxyMessenger.sendConnect(player, server);
     }
 
-    public void sendStatus(Player player, boolean isAuthenticated) {
-        ByteArrayDataOutput out = ByteStreams.newDataOutput();
-        out.writeUTF("Forward");
-        out.writeUTF("ONLINE");
-        out.writeUTF("losauth:status");
-        ByteArrayDataOutput dataOut = ByteStreams.newDataOutput();
-        dataOut.writeUTF(player.getName());
-        dataOut.writeBoolean(isAuthenticated);
-        byte[] dataBytes = dataOut.toByteArray();
-        out.writeShort(dataBytes.length);
-        out.write(dataBytes);
-        player.sendPluginMessage(this, "BungeeCord", out.toByteArray());
+    /**
+     * Reports the current login state of a player to the proxy (signed message).
+     */
+    public void sendStatus(Player player) {
+        proxyMessenger.sendStatus(player);
+    }
+
+    /**
+     * Sends the player on after authentication when send-after-auth is enabled. With
+     * return-to-requested-server on the proxy, the server the player asked for wins.
+     */
+    public void sendAfterAuth(Player player) {
+        Config.Settings.SendAfterAuth sendAfterAuth = getConfigFile().getSettings().getSendAfterAuth();
+        if (!sendAfterAuth.isEnabled()) {
+            return;
+        }
+        String server = sendAfterAuth.getServer();
+        foliaLib.getScheduler().runLater(() -> sendPlayerToServer(player, server), 20L);
+    }
+
+    public boolean isBehindProxy() {
+        return proxyMessenger != null && proxyMessenger.isBehindProxy();
     }
 
     public boolean isAuthenticated(Player player) {
@@ -347,7 +374,7 @@ public class Bukkit extends JavaPlugin {
             net.leaderos.auth.bukkit.helpers.BossBarUtil.hideBossBar(player);
         }
 
-        sendStatus(player, true);
+        sendStatus(player);
         authMeCompatBridge.callLogin(player);
     }
 
@@ -359,7 +386,7 @@ public class Bukkit extends JavaPlugin {
 
         session.setState(session.getToken() == null ? SessionState.LOGIN_REQUIRED : SessionState.TFA_REQUIRED);
 
-        sendStatus(player, false);
+        sendStatus(player);
         authMeCompatBridge.callLogout(player);
     }
 

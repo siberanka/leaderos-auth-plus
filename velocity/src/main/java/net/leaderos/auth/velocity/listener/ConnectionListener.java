@@ -93,7 +93,16 @@ public class ConnectionListener {
                     Shared.getDebugAPI().send("Player " + playerName + " has active session, allowing direct login.", false);
                     ChatUtil.sendConsoleInfo(playerName + " has logged in with an active session.");
                     ChatUtil.sendMessage(player, plugin.getLangFile().getMessages().getLogin().getSuccess());
-                    plugin.getLimboServer().spawnPlayer(player, new ValidSessionHandler());
+                    plugin.getLimboServer().spawnPlayer(player, new ValidSessionHandler(plugin, player));
+                    return;
+                }
+
+                // A Floodgate player whose XUID is bound to this account skips the password
+                if (plugin.getBedrockTrust() != null && plugin.getBedrockTrust().trusts(player, session)) {
+                    session.setState(SessionState.AUTHENTICATED);
+                    ChatUtil.sendConsoleInfo(playerName + " logged in with the Xbox account bound to it.");
+                    ChatUtil.sendMessage(player, plugin.getLangFile().getMessages().getLogin().getBedrockTrusted());
+                    plugin.getLimboServer().spawnPlayer(player, new ValidSessionHandler(plugin, player));
                     return;
                 }
 
@@ -114,7 +123,7 @@ public class ConnectionListener {
         Player player = event.getPlayer();
         
         // If already authenticated, allow any connection
-        if (plugin.getAuthenticatedPlayers().getOrDefault(player.getUsername(), false))
+        if (plugin.isAuthenticated(player))
             return;
 
         // Limbo server check (allow connecting to limbo/auth lobby)
@@ -132,7 +141,7 @@ public class ConnectionListener {
 
     @Subscribe
     public void onDisconnect(com.velocitypowered.api.event.connection.DisconnectEvent event) {
-        plugin.getAuthenticatedPlayers().remove(event.getPlayer().getUsername());
+        plugin.setAuthenticated(event.getPlayer(), false);
     }
 
     private void kickPlayer(Player player, List<String> kickMessage) {

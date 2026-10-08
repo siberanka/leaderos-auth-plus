@@ -67,14 +67,10 @@ public class TfaCommand extends BaseCommand {
                         ChatUtil.sendConsoleInfo(player.getName() + " has completed TFA verification successfully.");
 
                         plugin.forceAuthenticate(player);
+                        plugin.getBedrockTrust().rememberVerified(player);
                         plugin.getAltAccountManager().processPlayerRecord(player, ip);
 
-                        if (plugin.getConfigFile().getSettings().getSendAfterAuth().isEnabled()) {
-                            plugin.getFoliaLib().getScheduler().runLater(() -> {
-                                plugin.sendPlayerToServer(player,
-                                        plugin.getConfigFile().getSettings().getSendAfterAuth().getServer());
-                            }, 20L);
-                        }
+                        plugin.sendAfterAuth(player);
                     } else if (result.getError() == ErrorCode.WRONG_CODE) {
                         ChatUtil.sendMessage(player, plugin.getLangFile().getMessages().getTfa().getInvalidCode());
                     } else if (result.getError() == ErrorCode.SESSION_NOT_FOUND) {
