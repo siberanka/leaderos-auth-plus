@@ -60,7 +60,7 @@ import java.util.Locale;
  */
 @Getter
 @Setter
-@Plugin(id = "leaderosauth", name = "LeaderOS-Auth", version = "1.1.0-siberanka", url = "https://leaderos.net", description = "LeaderOS Auth for Velocity", authors = {
+@Plugin(id = "leaderosauth", name = "LeaderOS-Auth", version = "1.1.1-siberanka", url = "https://leaderos.net", description = "LeaderOS Auth for Velocity", authors = {
         "leaderos", "efekurbann", "siberanka" }, dependencies = { @Dependency(id = "limboapi"),
         @Dependency(id = "floodgate", optional = true) })
 public class Velocity {
@@ -445,7 +445,7 @@ public class Velocity {
 
     public void checkUpdate() {
         Velocity.getInstance().getServer().getScheduler().buildTask(Velocity.getInstance(), () -> {
-            PluginUpdater updater = new PluginUpdater("1.1.0-siberanka");
+            PluginUpdater updater = new PluginUpdater("1.1.1-siberanka");
             try {
                 if (updater.checkForUpdates()) {
                     Component msg = ChatUtil.replacePlaceholders(

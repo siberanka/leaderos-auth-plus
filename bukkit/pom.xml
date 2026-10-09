@@ -10,7 +10,7 @@
     <modelVersion>4.0.0</modelVersion>
 
     <artifactId>leaderos-auth-bukkit</artifactId>
-    <version>1.1.0-siberanka</version>
+    <version>1.1.1-siberanka</version>
     <packaging>jar</packaging>
 
     <properties>
@@ -33,18 +33,11 @@
                 <artifactId>maven-shade-plugin</artifactId>
                 <version>3.6.0</version>
                 <configuration>
-                    <relocations>
+                    <!-- Appended to the parent list (okaeri, triumph, bstats, folialib, jetbrains) -->
+                    <relocations combine.children="append">
                         <relocation>
                             <pattern>com.zaxxer.hikari</pattern>
                             <shadedPattern>net.leaderos.auth.bukkit.hikari</shadedPattern>
-                        </relocation>
-                        <relocation>
-                            <pattern>org.bstats</pattern>
-                            <shadedPattern>net.leaderos.auth.bukkit.bstats</shadedPattern>
-                        </relocation>
-                        <relocation>
-                            <pattern>com.tcoded.folialib</pattern>
-                            <shadedPattern>net.leaderos.auth.bukkit.folialib</shadedPattern>
                         </relocation>
                     </relocations>
                 </configuration>
@@ -148,6 +141,13 @@
             <groupId>com.github.InventivetalentDev</groupId>
             <artifactId>BossBarAPI</artifactId>
             <version>2.4.3-SNAPSHOT</version>
+            <exclusions>
+                <!-- The server provides the Bukkit API; never bundle it -->
+                <exclusion>
+                    <groupId>org.bukkit</groupId>
+                    <artifactId>bukkit</artifactId>
+                </exclusion>
+            </exclusions>
         </dependency>
         <!-- Floodgate API (Bedrock) -->
         <dependency>
@@ -174,6 +174,13 @@
             <artifactId>mysql-connector-j</artifactId>
             <version>8.4.0</version>
             <scope>compile</scope>
+            <exclusions>
+                <!-- Only needed for the X DevAPI; plain JDBC does not use it -->
+                <exclusion>
+                    <groupId>com.google.protobuf</groupId>
+                    <artifactId>protobuf-java</artifactId>
+                </exclusion>
+            </exclusions>
         </dependency>
     </dependencies>
 </project>

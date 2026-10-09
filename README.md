@@ -10,7 +10,7 @@
 
 **Minecraft sunucuları için LeaderOS panel kimlik doğrulama eklentisi.** **Bukkit/Spigot/Paper/Folia**, **BungeeCord** ve **Velocity** proxy sunucularını destekler.
 
-> **Sürüm:** 1.1.0-siberanka
+> **Sürüm:** 1.1.1-siberanka
 > **Yazarlar:** leaderos, efekurbann, siberanka
 
 ---
@@ -88,9 +88,9 @@
 ### Kurulum
 
 1. Platformunuza uygun JAR dosyasını indirin:
-   - `leaderos-auth-bukkit-1.1.0-siberanka.jar` — Bukkit/Spigot/Paper/Folia
-   - `leaderos-auth-bungee-1.1.0-siberanka.jar` — BungeeCord
-   - `leaderos-auth-velocity-1.1.0-siberanka.jar` — Velocity (LimboAPI gerektirir)
+   - `leaderos-auth-bukkit-1.1.1-siberanka.jar` — Bukkit/Spigot/Paper/Folia
+   - `leaderos-auth-bungee-1.1.1-siberanka.jar` — BungeeCord
+   - `leaderos-auth-velocity-1.1.1-siberanka.jar` — Velocity (LimboAPI gerektirir)
 2. JAR dosyasını sunucunuzun `plugins/` dizinine yerleştirin
 3. Sunucuyu başlatarak yapılandırma dosyalarını oluşturun
 4. `config.yml` dosyasını LeaderOS panel URL'niz ve API anahtarınızla düzenleyin
@@ -198,9 +198,9 @@
 ### Installation
 
 1. Download the appropriate JAR for your platform:
-   - `leaderos-auth-bukkit-1.1.0-siberanka.jar` for Bukkit/Spigot/Paper/Folia
-   - `leaderos-auth-bungee-1.1.0-siberanka.jar` for BungeeCord
-   - `leaderos-auth-velocity-1.1.0-siberanka.jar` for Velocity (requires LimboAPI)
+   - `leaderos-auth-bukkit-1.1.1-siberanka.jar` for Bukkit/Spigot/Paper/Folia
+   - `leaderos-auth-bungee-1.1.1-siberanka.jar` for BungeeCord
+   - `leaderos-auth-velocity-1.1.1-siberanka.jar` for Velocity (requires LimboAPI)
 2. Place the JAR in your server's `plugins/` directory
 3. Start the server to generate config files
 4. Edit `config.yml` with your LeaderOS panel URL and API key
@@ -427,9 +427,9 @@ mvn clean package -DskipTests
 ```
 
 Çıktı / Output JARs:
-- `bukkit/target/leaderos-auth-bukkit-1.1.0-siberanka.jar`
-- `bungee/target/leaderos-auth-bungee-1.1.0-siberanka.jar`
-- `velocity/target/leaderos-auth-velocity-1.1.0-siberanka.jar`
+- `bukkit/target/leaderos-auth-bukkit-1.1.1-siberanka.jar`
+- `bungee/target/leaderos-auth-bungee-1.1.1-siberanka.jar`
+- `velocity/target/leaderos-auth-velocity-1.1.1-siberanka.jar`
 
 ---
 
