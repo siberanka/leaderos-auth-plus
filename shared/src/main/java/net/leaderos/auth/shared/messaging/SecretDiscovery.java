@@ -78,6 +78,18 @@ public final class SecretDiscovery {
     }
 
     /**
+     * Reads Velocity's player-info-forwarding-mode from velocity.toml.
+     *
+     * @param proxyRoot proxy working directory
+     * @return the mode in lower case ("modern", "bungeeguard", "legacy", "none"), or "" when unknown
+     */
+    public static String velocityForwardingMode(Path proxyRoot) {
+        Map<String, String> toml = topLevelToml(read(proxyRoot.resolve("velocity.toml")));
+        String mode = toml.get("player-info-forwarding-mode");
+        return mode == null ? "" : mode.trim().toLowerCase(java.util.Locale.ROOT);
+    }
+
+    /**
      * Derives keys for every usable secret.
      *
      * @param secrets candidate secrets

@@ -67,6 +67,14 @@ public class ProxyMessenger {
         this.behindProxy = bungee || velocity;
         this.key = secrets.isEmpty() ? null : AuthChannel.Key.derive(secrets.get(0));
 
+        if (bungee && !velocity && plugin.getServer().getPluginManager().getPlugin("BungeeGuard") == null) {
+            // Legacy BungeeCord forwarding trusts whatever name, UUID and IP the connection claims.
+            plugin.getLogger().severe("This server trusts BungeeCord IP forwarding without BungeeGuard. Anyone who "
+                    + "can reach this port directly can join as any player with any IP and skip the auth server. "
+                    + "Install BungeeGuard on the proxy and every backend (or use Velocity modern forwarding) and "
+                    + "let only the proxy reach the backend ports.");
+        }
+
         if (behindProxy && key == null) {
             plugin.getLogger().severe("No proxy messaging secret is available: login status sent to the proxy "
                     + "is unsigned and LeaderOS Auth on the proxy will refuse it (players stay on the auth server). "

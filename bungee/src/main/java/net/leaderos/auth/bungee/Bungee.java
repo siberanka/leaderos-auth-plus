@@ -85,6 +85,8 @@ public class Bungee extends Plugin {
             sessionListener.sweep(now);
         }, 1, 1, TimeUnit.MINUTES);
 
+        warnAboutForwarding();
+
         String authServerName = configFile.getSettings().getAuthServer();
         ServerInfo serverInfo = getProxy().getServerInfo(authServerName);
         if (serverInfo == null) {
@@ -129,6 +131,25 @@ public class Bungee extends Plugin {
 
     private static String key(ProxiedPlayer player) {
         return player.getName().toLowerCase(Locale.ROOT);
+    }
+
+    /**
+     * Legacy IP forwarding lets anyone who reaches a backend port claim any name, UUID and IP; only
+     * BungeeGuard (or a firewall) stops that. The proxy cannot fix it, but it can say so.
+     */
+    private void warnAboutForwarding() {
+        if (!getProxy().getConfig().isIpForward()) {
+            getLogger().warning("ip_forward is false: backends see the proxy's address, so panel sessions and "
+                    + "IP limits on the auth server cannot tell players apart. Enable ip_forward with BungeeGuard.");
+            return;
+        }
+        boolean bungeeGuard = getProxy().getPluginManager().getPlugin("BungeeGuard") != null
+                || !SecretDiscovery.bungee(Paths.get("").toAbsolutePath(), "").isEmpty();
+        if (!bungeeGuard) {
+            getLogger().severe("IP forwarding is not protected by BungeeGuard. Anyone who can reach a backend port "
+                    + "directly can join it as any player and skip the auth server. Install BungeeGuard on the "
+                    + "proxy and every backend, and let only the proxy reach the backend ports.");
+        }
     }
 
     private void loadMessagingKeys() {

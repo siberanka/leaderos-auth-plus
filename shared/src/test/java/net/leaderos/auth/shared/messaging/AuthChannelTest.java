@@ -212,6 +212,8 @@ class AuthChannelTest {
 
         List<String> secrets = SecretDiscovery.velocity(directory, "");
         assertEquals(Collections.singletonList("velocity-forwarding-secret-xyz"), secrets);
+        assertEquals("modern", SecretDiscovery.velocityForwardingMode(directory));
+        assertEquals("", SecretDiscovery.velocityForwardingMode(directory.resolve("missing")));
 
         List<String> configuredFirst = SecretDiscovery.velocity(directory, "configured-secret-0123456");
         assertEquals("configured-secret-0123456", configuredFirst.get(0));

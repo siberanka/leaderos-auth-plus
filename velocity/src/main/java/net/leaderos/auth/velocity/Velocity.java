@@ -180,6 +180,7 @@ public class Velocity {
 
         // Signed messages from LeaderOS Auth on backend servers, if any backend runs it
         loadMessagingKeys();
+        warnAboutForwarding();
         this.server.getChannelRegistrar().register(MinecraftChannelIdentifier.from(AuthChannel.CHANNEL));
         this.server.getEventManager().register(this, new net.leaderos.auth.velocity.listener.PluginMessageListener(this));
 
@@ -204,6 +205,19 @@ public class Velocity {
             authenticatedPlayers.put(key, player);
         } else {
             authenticatedPlayers.remove(key, player);
+        }
+    }
+
+    /**
+     * Legacy or no forwarding lets anyone who reaches a backend port claim any name and skip the limbo;
+     * modern (or BungeeGuard) forwarding signs what the proxy tells the backends.
+     */
+    private void warnAboutForwarding() {
+        String mode = SecretDiscovery.velocityForwardingMode(Paths.get("").toAbsolutePath());
+        if ("legacy".equals(mode) || "none".equals(mode)) {
+            logger.error("player-info-forwarding-mode is \"" + mode + "\". Anyone who can reach a backend port "
+                    + "directly can join it as any player and skip the auth limbo. Use \"modern\" forwarding "
+                    + "(or BungeeGuard) and let only the proxy reach the backend ports.");
         }
     }
 
