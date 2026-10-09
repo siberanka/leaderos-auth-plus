@@ -13,6 +13,8 @@
 > **Sürüm:** 1.1.1-siberanka
 > **Yazarlar:** leaderos, efekurbann, siberanka
 
+> 📖 Ayrıntılı Türkçe belge: **[WIKI.md](WIKI.md)** — kurulum, tüm yapılandırma anahtarları, güvenlik modeli, sorun giderme.
+
 ---
 
 ## 🇹🇷 Türkçe
@@ -103,7 +105,7 @@
 | `/login <şifre>` | Şifre ile giriş yap |
 | `/register <şifre> <şifre/email>` | Yeni hesap oluştur |
 | `/tfa <kod>` | İki faktörlü doğrulama kodu gir |
-| `/losauthreload` | Yapılandırmayı ve veritabanı bağlantılarını yeniler, giriş yapmayanları atar (Sadece Bukkit) |
+| `/leaderosauth reload` | Yapılandırmayı ve dil dosyalarını yeniler (Bukkit: `leaderos.reload`, Velocity: `leaderosauth.reload`) |
 | `/leaderosauth setspawn` | Auth spawn noktasını ayarla |
 | `/leaderosauth unlinkbedrock <oyuncu>` | Hesabın Bedrock (Xbox) giriş güvenini kaldırır (`leaderos.bedrock.unlink`; Bukkit ve Velocity) |
 
@@ -213,7 +215,7 @@
 | `/login <password>` | Login with password |
 | `/register <password> <password/email>` | Register a new account |
 | `/tfa <code>` | Enter two-factor authentication code |
-| `/losauthreload` | Securely reloads config/DBs and kicks unauthenticated players (Bukkit Only) |
+| `/leaderosauth reload` | Reloads configuration and language files (Bukkit: `leaderos.reload`, Velocity: `leaderosauth.reload`) |
 | `/leaderosauth setspawn` | Set the auth spawn location |
 | `/leaderosauth unlinkbedrock <player>` | Removes the Bedrock (Xbox) login trust of an account (`leaderos.bedrock.unlink`; Bukkit and Velocity) |
 
